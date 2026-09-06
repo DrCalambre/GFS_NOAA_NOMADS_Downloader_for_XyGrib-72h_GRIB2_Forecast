@@ -279,6 +279,52 @@ sudo pacman -S curl
 
 ---
 
+## ⏰ Automating with anacron (Linux)
+
+To make the most of this script, you can automate it to download the latest 72‑hour forecast **once a day** without having to remember to run it manually.
+
+**anacron** is the perfect tool for this. Unlike `cron`, it is designed for **laptops and desktops that are not running 24/7**. It will execute the task the next time you turn on your computer, ensuring you always get your daily update.
+
+### 📝 Step-by-step: Add the task to anacron
+
+Follow these simple steps to automate the download:
+
+1.  **Open your personal anacrontab file** in a text editor:
+    ```bash
+    nano ~/.anacron/anacrontab
+    ```
+
+2.  **Add the following line** at the end of the file:
+    ```text
+    1       10      descargar_gfs_xygrib   /home/your_user/xygrib-noaa.sh > /home/your_user/xygrib-forecast.log 2>&1 && echo "---- $(date) ----" >> /home/your_user/xygrib-forecast.log
+    ```
+
+    **Important:** Replace `/home/your_user/` with the actual path to your script and log file.
+
+3.  **Explanation of the line:**
+    | Part | Meaning |
+    | :--- | :--- |
+    | `1` | Run the job **once a day**. |
+    | `10` | Wait **10 minutes** after booting before running the command. |
+    | `descargar_gfs_xygrib` | A unique identifier for this job. |
+    | `/home/your_user/xygrib-noaa.sh` | The full path to your script. |
+    | `> /home/your_user/xygrib-forecast.log 2>&1` | Redirects all output (including errors) to a log file in your home directory. |
+    | `&& echo "---- $(date) ----" >> /home/your_user/xygrib-forecast.log` | Appends a timestamp to the log after the script finishes. |
+
+4.  **Save and close** the file (`Ctrl+O`, `Enter`, `Ctrl+X`).
+
+That's it! Starting tomorrow, your system will automatically download a fresh GRIB forecast for you.
+
+### 🔍 Check the log
+
+To verify that everything is working, you can check the log file:
+
+```bash
+tail -f /home/your_user/xygrib-forecast.log
+```
+
+---
+
 ## 🐛 Troubleshooting
 
 ### Error: `curl: (22) The requested URL returned error: 500`

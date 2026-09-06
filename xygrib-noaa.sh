@@ -43,7 +43,7 @@ STEP=3
 
 # Región
 WEST="-80"
-EAST="-50"
+EAST="-62"
 NORTH="-15"
 SOUTH="-74"
 
