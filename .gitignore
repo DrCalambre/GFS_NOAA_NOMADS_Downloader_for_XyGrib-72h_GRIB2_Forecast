@@ -1,0 +1,15 @@
+# Temporary files
+*.part
+*.tmp
+
+# GRIB files (optional, if you don't want to commit them)
+*.grib2
+
+# Backup files
+*~
+
+# macOS
+.DS_Store
+
+# Linux
+Thumbs.db
