@@ -330,6 +330,3 @@ Thanks to the XyGrib community and NOAA/NCEP for keeping the data open.
 ---
 
 **Fair winds!** 🌬️
-```
-
----
