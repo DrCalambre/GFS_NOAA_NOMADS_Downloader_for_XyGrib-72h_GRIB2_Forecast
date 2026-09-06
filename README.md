@@ -165,10 +165,10 @@ SOUTH="-60"
 #### 3. Focus on a specific coastal area
 
 ```bash
-WEST="-72"
+WEST="-80"
 EAST="-62"
-NORTH="-35"
-SOUTH="-50"
+NORTH="-15"
+SOUTH="-74"
 ```
 
 ---
