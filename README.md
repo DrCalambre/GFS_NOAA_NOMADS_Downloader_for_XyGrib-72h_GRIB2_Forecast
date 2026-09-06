@@ -43,7 +43,7 @@ This script **downloads directly from the official source (NOAA NOMADS)** and bu
 
 ```bash
 cd ~/bin  # or any directory in your PATH
-git clone https://github.com/your-username/GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB2_Forecast
+git clone https://github.com/DrCalambre/GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB2_Forecast
 cd GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB2_Forecast
 chmod +x xygrib-noaa.sh
 ```
@@ -51,7 +51,7 @@ chmod +x xygrib-noaa.sh
 ### Option 2 — Direct download
 
 ```bash
-wget https://raw.githubusercontent.com/your-username/GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB2_Forecast/main/xygrib-noaa.sh
+wget https://raw.githubusercontent.com/DrCalambre/GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB2_Forecast/main/xygrib-noaa.sh
 chmod +x xygrib-noaa.sh
 ```
 
