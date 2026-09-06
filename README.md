@@ -30,7 +30,7 @@ This script **downloads directly from the official source (NOAA NOMADS)** and bu
 | **Cycle** | 12 UTC (configurable) |
 | **Horizon** | 0 – 72 hours |
 | **Interval** | 3 hours (25 time steps) |
-| **Region** | `-80°E` to `-50°E` / `-15°S` to `-58°S`<br>(Argentina, Chile, Falkland Islands, and surrounding waters) |
+| **Region** | `-80°E` to `-50°E` / `-15°S` to `-58°S`<br>(Argentina, Chile, and surrounding waters) |
 | **Variables** | Temperature, wind, gusts, pressure, humidity, cloud cover, precipitation, snow, CAPE, **0°C isotherm**, freezing rain, etc. |
 | **Output** | Single GRIB2 in `~/.xygrib/grib/GFS_NOAA_YYYYMMDD_12Z_72hs.grib2` |
 | **Temporaries** | Kept in `/tmp/gfs-v9-...` for debugging if needed |
