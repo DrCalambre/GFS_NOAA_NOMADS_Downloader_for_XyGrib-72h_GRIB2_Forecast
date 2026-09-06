@@ -306,6 +306,24 @@ If you find an issue, have an improvement, or want to add support for other mode
 
 ---
 
+## 📸 Screenshots
+
+### Selecting the GRIB file in XyGrib
+
+![Selecting GRIB file](screenshots/select-grib.jpg)
+
+*The generated GRIB2 file ready to be opened in XyGrib.*
+
+---
+
+### 72-hour forecast displayed in XyGrib
+
+![XyGrib forecast](screenshots/xygrib-forecast.jpg)
+
+*72-hour GFS forecast loaded in XyGrib, showing wind, pressure, temperature, and the 0°C isotherm.*
+
+---
+
 ## 📄 License
 
 **MIT** — free use, no warranty.
