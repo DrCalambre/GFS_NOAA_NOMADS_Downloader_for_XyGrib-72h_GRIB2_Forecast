@@ -133,9 +133,9 @@ Edit the script and modify these variables:
 
 ```bash
 WEST="-80"      # Longitude limit (west)
-EAST="-50"      # Longitude limit (east)
+EAST="-62"      # Longitude limit (east)
 NORTH="-15"     # Latitude limit (north)
-SOUTH="-58"     # Latitude limit (south)
+SOUTH="-74"     # Latitude limit (south)
 ```
 
 **Important:** Longitudes are negative for the Western Hemisphere. Latitudes are negative for the Southern Hemisphere.
