@@ -27,13 +27,16 @@ This script **downloads directly from the official source (NOAA NOMADS)** and bu
 | Feature | Detail |
 |---|---|
 | **Model** | GFS 0.25° (NOAA/NCEP) |
-| **Cycle** | 12 UTC (configurable) |
+| **Cycle** | **Automatic detection** (18Z → 12Z → 06Z → 00Z) with smart fallback |
 | **Horizon** | 0 – 72 hours |
 | **Interval** | 3 hours (25 time steps) |
-| **Region** | `-80°E` to `-50°E` / `-15°S` to `-58°S`<br>(Argentina, Chile, and surrounding waters) |
+| **Region** | `-90°W` to `-30°W` / `15°S` to `-60°S`<br>(South America and surrounding waters) *configurable* |
 | **Variables** | Temperature, wind, gusts, pressure, humidity, cloud cover, precipitation, snow, CAPE, **0°C isotherm**, freezing rain, etc. |
-| **Output** | Single GRIB2 in `~/.xygrib/grib/GFS_NOAA_YYYYMMDD_12Z_72hs.grib2` |
-| **Temporaries** | Kept in `/tmp/gfs-v9-...` for debugging if needed |
+| **Output** | Single GRIB2 in `~/.xygrib/grib/GFS_NOAA_YYYYMMDD_72hs.grib2` |
+| **Temporaries** | Stored in `/tmp/gfs-v1-...` and **automatically cleaned up** after execution |
+| **Validation** | Automatic GRIB format check using `file` command |
+| **Error handling** | Smart retry with fallback cycles on 404 errors |
+| **Progress** | Compact output with per-file status (`[01/25] F000 → ✅ 12Z`) |
 
 ---
 
@@ -383,6 +386,39 @@ If you find an issue, have an improvement, or want to add support for other mode
 ![XyGrib File information](screenshots/GFS-NOAA_file-info.jpg)
 
 *Information from the grib2 file downloaded using this script*
+
+## 📋 Changelog
+
+### v1.0.0 — 2026-09-07
+**First stable release**
+
+- Automatic detection of available GFS cycles (18Z → 12Z → 06Z → 00Z)
+- Smart fallback to alternative cycles when a file returns 404
+- Clean progress output with compact messages (`[01/25] F000 → ✅ 12Z`)
+- Automatic cleanup of temporary files (configurable)
+- GRIB validation using `file` command
+- Region optimized for South America
+- Tested on antiX Linux 26 / XyGrib 1.2.6
+
+---
+
+### v0.9.0 — 2026-09-06
+**Pre-release (V9)**
+
+- Manual cycle selection (fixed 12Z)
+- Basic 72-hour forecast download
+- Concatenation of 25 GRIB files
+- Initial support for 0°C isotherm
+
+---
+
+### v0.8.0 — 2026-09-05
+**Development version (V8)**
+
+- First working version with NOAA NOMADS
+- 72-hour forecast with 3-hour intervals
+- Region: Argentina, Chile, and surrounding waters
+- Includes CAPE, gusts, snow, freezing rain, and 0°C isotherm
 
 ## 📄 License
 
