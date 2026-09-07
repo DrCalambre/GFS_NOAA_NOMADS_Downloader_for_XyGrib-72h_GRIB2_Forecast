@@ -42,10 +42,10 @@ MAX_FORECAST=72
 STEP=3
 
 # Región
-WEST="-80"
-EAST="-62"
-NORTH="-15"
-SOUTH="-74"
+WEST="-90"
+EAST="-30"
+NORTH="15"
+SOUTH="-90"
 
 # ------------------------------------------------------------
 # DIRECTORIOS

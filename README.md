@@ -370,6 +370,12 @@ If you find an issue, have an improvement, or want to add support for other mode
 
 ---
 
+### The xygrib forecast log file
+
+![XyGrib log](screenshots/xygrib-forecast-log.jpg)
+
+*the log file (generated after configuring the task via anacron)*
+
 ## 📄 License
 
 **MIT** — free use, no warranty.
