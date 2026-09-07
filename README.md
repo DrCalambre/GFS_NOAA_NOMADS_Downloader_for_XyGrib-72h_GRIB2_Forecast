@@ -376,6 +376,14 @@ If you find an issue, have an improvement, or want to add support for other mode
 
 *the log file (generated after configuring the task via anacron)*
 
+---
+
+### GFS-NOAA File information
+
+![XyGrib File information](screenshots/GFS-NOAA_file-info.jpg)
+
+*Information from the grib2 file downloaded using this script*
+
 ## 📄 License
 
 **MIT** — free use, no warranty.
