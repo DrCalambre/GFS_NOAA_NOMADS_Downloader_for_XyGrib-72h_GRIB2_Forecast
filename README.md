@@ -1,4 +1,3 @@
-```markdown
 # GFS NOAA NOMADS Downloader for XyGrib — GRIB2 Forecast
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -526,4 +525,3 @@ Thanks to the XyGrib community and NOAA/NCEP for keeping the data open.
 ---
 
 **Fair winds!** 🌬️
-```
