@@ -9,7 +9,7 @@
 #/_______  /__|     \______  (____  /____(____  /__|_|  /___  /__|    \___  >
 #        \/                \/     \/          \/      \/    \/            \/ 
 # --------------------------------------------------------------------------------------------------------------------------------------
-# GFS NOAA NOMADS - v1.0.1 — 2026-09-08
+# GFS NOAA NOMADS - v1.0.2 — 2026-09-08
 # --------------------------------------------------------------------------------------------------------------------------------------
 # Descarga un pronóstico GFS de 0.25° directamente desde NOAA NOMADS
 # y construye un archivo GRIB2 compatible con XyGrib.
@@ -24,6 +24,7 @@
 #   - Limpieza automática de archivos temporales
 #   - Validación del formato GRIB final
 #   - Salida de progreso clara y compacta
+#   - [NUEVO] Descarga opcional de datos de olas (WW3) con detección inteligente de archivos disponibles
 # ============================================================
 
 set -u
@@ -50,7 +51,7 @@ MAX_DAYS_BACK=3
 # Horizonte deseado en horas.
 # El modelo GFS 0.25° tiene un límite máximo de 384 horas (16 días).
 # Valores permitidos: 0 - 384
-MAX_FORECAST=168  # 7 días (configurable)
+MAX_FORECAST=72  # 3 días (configurable)
 
 # --- VALIDACIÓN DEL HORIZONTE ---
 # El modelo GFS 0.25° no proporciona archivos más allá de 384 horas.
@@ -116,12 +117,22 @@ NORTH="-20"   # Límite norte (latitud) - Norte de Argentina
 SOUTH="-60"   # Límite sur (latitud) - Cabo de Hornos
 
 # ------------------------------------------------------------
+# CONFIGURACIÓN DE OLAS (WW3)
+# ------------------------------------------------------------
+
+# Activar descarga de datos de olas (WW3)
+#   true  = descargar también los datos de olas
+#   false = solo descargar GFS (tiempo)
+DOWNLOAD_WAVES=true
+
+# ------------------------------------------------------------
 # DIRECTORIOS
 # ------------------------------------------------------------
 
 # Directorio temporal para archivos intermedios (se limpia al finalizar)
 # El sufijo $$ añade el PID del proceso para evitar colisiones
 WORKDIR="/tmp/gfs-v1-${DATE}-$$"
+WAVE_WORKDIR="/tmp/wave-v1-${DATE}-$$"
 
 # Directorio de GRIB de XyGrib (donde se guarda el archivo final)
 XYGRIB_DIR="${HOME}/.xygrib/grib"
@@ -129,6 +140,7 @@ XYGRIB_DIR="${HOME}/.xygrib/grib"
 # Archivo final: nombre que incluye la fecha y el horizonte descargado
 # Se usará la fecha real de descarga (DATE) para identificar cuándo se generó
 OUTPUT="${XYGRIB_DIR}/GFS_NOAA_${DATE}_${MAX_FORECAST}hs.grib2"
+WAVE_OUTPUT="${XYGRIB_DIR}/WW3_NOAA_${DATE}_${MAX_FORECAST}hs.grib2"
 
 # Pausa entre solicitudes (segundos) para no sobrecargar el servidor NOAA
 # NOAA recomienda espaciar las solicitudes automatizadas
@@ -240,6 +252,86 @@ download_with_fallback() {
     return 2  # Fallo total
 }
 
+# Función: find_best_wave_cycle
+# Descripción: Encuentra el primer ciclo disponible para WW3
+# Parámetros: $1 = fecha (ej. "20260907")
+# Retorna: El ciclo disponible (ej. "18") o cadena vacía si ninguno funciona
+find_best_wave_cycle() {
+    local date=$1
+    for cycle in "${CYCLES[@]}"; do
+        local test_url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfswave.pl?dir=%2Fgfs.${date}%2F${cycle}%2Fwave%2Fgridded&file=gfswave.t${cycle}z.global.0p25.f000.grib2&all_var=on&all_lev=on"
+        if curl --output /dev/null --silent --head --fail "$test_url"; then
+            echo "$cycle"
+            return 0
+        fi
+    done
+    echo ""
+    return 1
+}
+
+# Función: find_best_wave_cycle_with_retry
+# Descripción: Busca un ciclo disponible para WW3, primero en la fecha actual y luego
+#              en días anteriores si es necesario.
+# Retorna: Una cadena con el formato "CICLO:FECHA" (ej. "18:20260907")
+#          o cadena vacía si no se encuentra ningún ciclo.
+find_best_wave_cycle_with_retry() {
+    local current_date="${DATE}"
+    local attempt=0
+    
+    while [ $attempt -lt $MAX_DAYS_BACK ]; do
+        local cycle=$(find_best_wave_cycle "$current_date")
+        if [ -n "$cycle" ]; then
+            echo "${cycle}:${current_date}"
+            return 0
+        fi
+        current_date=$(date -u -d "${current_date} -1 day" +%Y%m%d)
+        attempt=$((attempt + 1))
+    done
+    
+    echo ""
+    return 1
+}
+
+# Función: download_wave_data
+# Descripción: Descarga datos de olas (WW3) para un forecast específico.
+#              Usa la resolución global 0.25° con all_var=on y all_lev=on.
+# Parámetros:
+#   $1 = forecast (ej. "003")
+#   $2 = ciclo (ej. "12")
+#   $3 = fecha (ej. "20260907")
+#   $4 = archivo de salida
+# Retorna: 0 si éxito, 1 si fallo
+download_wave_data() {
+    local forecast=$1
+    local cycle=$2
+    local date=$3
+    local output_file=$4
+    
+    # Estructura correcta para WW3 global 0.25° con all_var=on y all_lev=on
+    local file="gfswave.t${cycle}z.global.0p25.f${forecast}.grib2"
+    local url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfswave.pl?dir=%2Fgfs.${date}%2F${cycle}%2Fwave%2Fgridded&file=${file}&all_var=on&all_lev=on&subregion=&toplat=${NORTH}&leftlon=${WEST}&rightlon=${EAST}&bottomlat=${SOUTH}"
+    
+    if curl --fail --location --connect-timeout 30 --max-time 600 --retry 2 --retry-delay 5 --output "$output_file" "$url" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Función: check_wave_file_exists
+# Descripción: Verifica si un archivo WW3 específico existe en el servidor
+# Parámetros: $1 = forecast (ej. "003"), $2 = ciclo, $3 = fecha
+# Retorna: 0 si existe, 1 si no
+check_wave_file_exists() {
+    local forecast=$1
+    local cycle=$2
+    local date=$3
+    local file="gfswave.t${cycle}z.global.0p25.f${forecast}.grib2"
+    local test_url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfswave.pl?dir=%2Fgfs.${date}%2F${cycle}%2Fwave%2Fgridded&file=${file}&all_var=on&all_lev=on&subregion=&toplat=${NORTH}&leftlon=${WEST}&rightlon=${EAST}&bottomlat=${SOUTH}"
+    curl --output /dev/null --silent --head --fail "$test_url"
+    return $?
+}
+
 # ------------------------------------------------------------
 # PREPARACIÓN
 # ------------------------------------------------------------
@@ -247,16 +339,22 @@ download_with_fallback() {
 # Crear directorios necesarios
 mkdir -p "${WORKDIR}"
 mkdir -p "${XYGRIB_DIR}"
+if [ "$DOWNLOAD_WAVES" = true ]; then
+    mkdir -p "${WAVE_WORKDIR}"
+fi
 
 # Mostrar cabecera informativa
 echo
 echo "============================================================"
-echo " GFS NOAA NOMADS - v1.0.1"
+echo " GFS NOAA NOMADS - v1.0.2"
 echo " ${MAX_FORECAST}-hour forecast for XyGrib"
+if [ "$DOWNLOAD_WAVES" = true ]; then
+    echo " + Wave data (WW3) with intelligent file detection"
+fi
 echo "============================================================"
 echo
 
-# Detectar el mejor ciclo disponible (con reintento en días anteriores)
+# Detectar el mejor ciclo disponible para GFS (con reintento en días anteriores)
 echo "🔍 Detecting available GFS cycle..."
 BEST_CYCLE_INFO=$(find_best_cycle_with_retry)
 
@@ -272,31 +370,34 @@ BEST_CYCLE="${BEST_CYCLE_INFO%:*}"
 USED_DATE="${BEST_CYCLE_INFO#*:}"
 
 if [ "$USED_DATE" != "$DATE" ]; then
-    echo "ℹ️  NOTE: Using data from ${USED_DATE} (current date ${DATE} has no cycles available yet)."
+    echo "ℹ️  NOTE: Using GFS data from ${USED_DATE} (current date ${DATE} has no cycles available yet)."
     echo "   This is normal when running the script early in the day (00:00-04:00 UTC)."
 fi
 
-echo "✅ Using cycle: ${BEST_CYCLE}Z (date: ${USED_DATE})"
+echo "✅ Using GFS cycle: ${BEST_CYCLE}Z (date: ${USED_DATE})"
 echo
 
 # Mostrar configuración completa
 echo "Date (current) : ${DATE}"
 echo "Date (used)    : ${USED_DATE}"
-echo "Cycle          : ${BEST_CYCLE}Z"
+echo "GFS Cycle      : ${BEST_CYCLE}Z"
 echo "Horizon        : f000 → f${MAX_FORECAST}"
 echo "Interval       : ${STEP} hours (dynamic if >240h)"
 echo "Time steps     : ${EXPECTED_FILES}"
 echo "Region         : ${WEST}°W to ${EAST}°W / ${SOUTH}°S to ${NORTH}°N"
-echo "Output         : ${OUTPUT}"
+echo "GFS output     : ${OUTPUT}"
+if [ "$DOWNLOAD_WAVES" = true ]; then
+    echo "Wave output    : ${WAVE_OUTPUT}"
+fi
 echo "Temp dir       : ${WORKDIR}"
 echo
 
 # ------------------------------------------------------------
-# DESCARGA DE ARCHIVOS
+# DESCARGA DE ARCHIVOS GFS
 # ------------------------------------------------------------
 
 echo "============================================================"
-echo " DOWNLOADING"
+echo " DOWNLOADING GFS (weather)"
 echo "============================================================"
 echo
 
@@ -353,12 +454,12 @@ for ((HOUR=0; HOUR<=MAX_FORECAST; HOUR+=STEP)); do
 done
 
 # ------------------------------------------------------------
-# RESULTADOS DE LA DESCARGA
+# RESULTADOS DE LA DESCARGA GFS
 # ------------------------------------------------------------
 
 echo
 echo "============================================================"
-echo " RESULTS"
+echo " GFS RESULTS"
 echo "============================================================"
 echo
 echo "✅ Successful       : ${SUCCESS}"
@@ -375,10 +476,10 @@ if [ "$FAILED" -gt 5 ]; then
 fi
 
 # ------------------------------------------------------------
-# CONSTRUIR EL GRIB FINAL
+# CONSTRUIR EL GRIB FINAL (GFS)
 # ------------------------------------------------------------
 
-echo "Building final GRIB2..."
+echo "Building final GFS GRIB2..."
 echo
 
 # Eliminar archivo anterior si existe
@@ -396,15 +497,15 @@ for ((HOUR=0; HOUR<=MAX_FORECAST; HOUR+=STEP)); do
 done
 
 # ------------------------------------------------------------
-# VALIDACIÓN DEL GRIB FINAL
+# VALIDACIÓN DEL GRIB FINAL (GFS)
 # ------------------------------------------------------------
 
 if [ ! -s "$OUTPUT" ]; then
-    echo "❌ ERROR: Final GRIB is empty."
+    echo "❌ ERROR: Final GFS GRIB is empty."
     exit 1
 fi
 
-echo "✅ Final GRIB created:"
+echo "✅ Final GFS GRIB created:"
 ls -lh "$OUTPUT"
 
 # Verificar que el archivo sea realmente un GRIB usando el comando 'file'
@@ -418,11 +519,138 @@ if command -v file >/dev/null 2>&1; then
 fi
 
 # ------------------------------------------------------------
+# DESCARGA DE DATOS DE OLAS (WW3) - CON DETECCIÓN INTELIGENTE
+# ------------------------------------------------------------
+
+if [ "$DOWNLOAD_WAVES" = true ]; then
+    echo
+    echo "============================================================"
+    echo " DOWNLOADING WAVE DATA (WW3)"
+    echo "============================================================"
+    echo
+
+    # Detectar el mejor ciclo para WW3 (independiente de GFS)
+    echo "🔍 Detecting available WW3 cycle..."
+    WAVE_CYCLE_INFO=$(find_best_wave_cycle_with_retry)
+
+    if [ -z "$WAVE_CYCLE_INFO" ]; then
+        echo "⚠️  WARNING: No WW3 cycle available for date ${DATE} or previous ${MAX_DAYS_BACK} days."
+        echo "   Skipping wave data download."
+    else
+        WAVE_CYCLE="${WAVE_CYCLE_INFO%:*}"
+        WAVE_DATE="${WAVE_CYCLE_INFO#*:}"
+
+        if [ "$WAVE_DATE" != "$DATE" ]; then
+            echo "ℹ️  NOTE: Using WW3 data from ${WAVE_DATE} (current date ${DATE} has no cycles available yet)."
+        fi
+
+        echo "✅ Using WW3 cycle: ${WAVE_CYCLE}Z (date: ${WAVE_DATE})"
+        echo
+
+        WAVE_SUCCESS=0
+        WAVE_FAILED=0
+        WAVE_TOTAL=0
+        
+        # Bucle inteligente: probar archivos hasta que uno falle o se alcance MAX_FORECAST
+        HOUR=0
+        while [ "$HOUR" -le "$MAX_FORECAST" ]; do
+            # Formatear el número de hora (ej. 003, 012, 168)
+            FORECAST=$(printf "%03d" "${HOUR}")
+            WAVE_PART="${WAVE_WORKDIR}/wave_${FORECAST}.grib2"
+            
+            # Verificar si el archivo existe antes de descargar
+            if check_wave_file_exists "$FORECAST" "$WAVE_CYCLE" "$WAVE_DATE"; then
+                # El archivo existe, descargarlo
+                WAVE_TOTAL=$((WAVE_TOTAL + 1))
+                printf "[%02d] WAVE F%s → " "$WAVE_TOTAL" "$FORECAST"
+                
+                if download_wave_data "$FORECAST" "$WAVE_CYCLE" "$WAVE_DATE" "$WAVE_PART"; then
+                    SIZE=$(du -h "$WAVE_PART" | cut -f1)
+                    echo " ✅ ${SIZE}"
+                    ((WAVE_SUCCESS++))
+                else
+                    echo " ❌ FAILED (download error)"
+                    ((WAVE_FAILED++))
+                    break
+                fi
+            else
+                # El archivo no existe, salir del bucle
+                if [ "$WAVE_TOTAL" -eq 0 ]; then
+                    echo "⚠️  No wave files found for cycle ${WAVE_CYCLE}Z (date: ${WAVE_DATE})."
+                else
+                    echo "ℹ️  No more wave files available beyond F${FORECAST}."
+                    echo "   Total wave files downloaded: ${WAVE_SUCCESS}"
+                fi
+                break
+            fi
+            
+            # Avanzar al siguiente paso
+            HOUR=$((HOUR + STEP))
+            
+            # Pausa entre solicitudes
+            sleep "$PAUSE"
+        done
+
+        # ------------------------------------------------------------
+        # RESULTADOS DE LA DESCARGA WW3
+        # ------------------------------------------------------------
+        echo
+        echo "============================================================"
+        echo " WAVE RESULTS"
+        echo "============================================================"
+        echo
+        echo "✅ Successful : ${WAVE_SUCCESS}"
+        echo "❌ Failed    : ${WAVE_FAILED}"
+        echo "📊 Total     : ${WAVE_TOTAL}"
+        echo
+
+        # ------------------------------------------------------------
+        # CONSTRUIR EL GRIB FINAL (WW3)
+        # ------------------------------------------------------------
+        if [ "$WAVE_SUCCESS" -gt 0 ]; then
+            echo "Building final Wave GRIB2..."
+            echo
+
+            rm -f "$WAVE_OUTPUT"
+
+            # Reconstruir la lista de archivos descargados
+            for ((HOUR=0; HOUR<=MAX_FORECAST; HOUR+=STEP)); do
+                FORECAST=$(printf "%03d" "${HOUR}")
+                WAVE_PART="${WAVE_WORKDIR}/wave_${FORECAST}.grib2"
+                if [ -f "$WAVE_PART" ] && [ -s "$WAVE_PART" ]; then
+                    cat "$WAVE_PART" >> "$WAVE_OUTPUT"
+                fi
+            done
+
+            if [ -s "$WAVE_OUTPUT" ]; then
+                echo "✅ Final Wave GRIB created:"
+                ls -lh "$WAVE_OUTPUT"
+
+                if command -v file >/dev/null 2>&1; then
+                    if file "$WAVE_OUTPUT" | grep -qi "grib"; then
+                        echo "✅ File validation: GRIB format confirmed."
+                    else
+                        echo "⚠️  Warning: File may not be a valid GRIB format."
+                    fi
+                fi
+            else
+                echo "❌ ERROR: Final Wave GRIB is empty."
+            fi
+        else
+            echo "❌ No wave data was successfully downloaded."
+        fi
+    fi
+fi
+
+# ------------------------------------------------------------
 # LIMPIEZA DE ARCHIVOS TEMPORALES
 # ------------------------------------------------------------
 
 echo "🧹 Cleaning temporary files..."
 rm -rf "$WORKDIR"
+if [ "$DOWNLOAD_WAVES" = true ]; then
+    rm -rf "$WAVE_WORKDIR"
+fi
 echo "✅ Temporary files removed."
 
 # ------------------------------------------------------------
@@ -431,13 +659,18 @@ echo "✅ Temporary files removed."
 
 echo
 echo "============================================================"
-echo " v1.0.1 COMPLETED"
+echo " v1.0.2 COMPLETED"
 echo "============================================================"
 echo
-echo "Final file:"
+echo "GFS file:"
 echo "  $OUTPUT"
+if [ "$DOWNLOAD_WAVES" = true ] && [ -s "$WAVE_OUTPUT" ]; then
+    echo
+    echo "Wave file (WW3):"
+    echo "  $WAVE_OUTPUT"
+fi
 echo
-echo "You can now open it in XyGrib:"
+echo "You can now open them in XyGrib:"
 echo "  File → Open GRIB..."
 echo
 echo "============================================================"
