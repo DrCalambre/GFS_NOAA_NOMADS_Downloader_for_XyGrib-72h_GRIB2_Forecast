@@ -1,4 +1,4 @@
-# GFS NOAA NOMADS Downloader for XyGrib — 72h GRIB2 Forecast
+# GFS NOAA NOMADS Downloader for XyGrib — GRIB2 Forecast
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Bash](https://img.shields.io/badge/Bash-4.0+-green.svg)](https://www.gnu.org/software/bash/)
@@ -28,14 +28,15 @@ This script **downloads directly from the official source (NOAA NOMADS)** and bu
 |---|---|
 | **Model** | GFS 0.25° (NOAA/NCEP) |
 | **Cycle** | **Automatic detection** (18Z → 12Z → 06Z → 00Z) with smart fallback |
-| **Horizon** | 0 – 72 hours |
-| **Interval** | 3 hours (25 time steps) |
+| **Horizon** | 0 – 384 hours (configurable, default 168h / 7 days) |
+| **Interval** | 3 hours (0-240h) / 12 hours (240-384h) |
 | **Region** | `-90°W` to `-30°W` / `15°S` to `-60°S`<br>(South America and surrounding waters) *configurable* |
 | **Variables** | Temperature, wind, gusts, pressure, humidity, cloud cover, precipitation, snow, CAPE, **0°C isotherm**, freezing rain, etc. |
 | **Output** | Single GRIB2 in `~/.xygrib/grib/GFS_NOAA_YYYYMMDD_72hs.grib2` |
 | **Temporaries** | Stored in `/tmp/gfs-v1-...` and **automatically cleaned up** after execution |
 | **Validation** | Automatic GRIB format check using `file` command |
 | **Error handling** | Smart retry with fallback cycles on 404 errors |
+| **Fallback date** | Automatic retry with previous days if no cycles available |
 | **Progress** | Compact output with per-file status (`[01/25] F000 → ✅ 12Z`) |
 
 ---
@@ -76,7 +77,8 @@ chmod +x xygrib-noaa.sh
 
 ### What it does
 
-1. Downloads **25 filtered GRIB files** from NOAA NOMADS (`f000`, `f003`, ... `f072`).
+1. Downloads **filtered GRIB files** from NOAA NOMADS (number depends on `MAX_FORECAST`).
+   - Default: 57 files for 168h (7 days) at 3-hour intervals.
 2. Waits **8 seconds** between requests (respecting NOAA's recommendation).
 3. Concatenates the files into a **single GRIB2**.
 4. Saves it to `~/.xygrib/grib/GFS_NOAA_YYYYMMDD_12Z_72hs.grib2`.
@@ -113,8 +115,9 @@ You can edit the script to adjust these parameters:
 | Variable | Description | Default |
 |---|---|---|
 | `CYCLE` | GFS cycle (`00`, `06`, `12`, `18`) | `12` |
-| `MAX_FORECAST` | Forecast horizon in hours | `72` |
-| `STEP` | Interval in hours | `3` |
+| `MAX_FORECAST` | Forecast horizon in hours (0-384) | `168` |
+| `STEP` | Interval in hours (automatic: 3h ≤240h, 12h >240h) | `3` (dynamic) |
+| `MAX_DAYS_BACK` | Days to look back if current date has no cycles | `3` |
 | `PAUSE` | Pause between downloads (seconds) | `8` |
 
 ---
@@ -388,6 +391,17 @@ If you find an issue, have an improvement, or want to add support for other mode
 *Information from the grib2 file downloaded using this script*
 
 ## 📋 Changelog
+
+### v1.0.1 — 2026-09-08
+**Improved stability release**
+
+- Automatic retry with previous days if no GFS cycles available for current date
+- New `MAX_DAYS_BACK` variable (default 3 days)
+- Informative messages when using data from a previous day
+- Region adjusted to northern Argentina (`NORTH="-20"`)
+- Always finds data, even when run early in the day (00:00-04:00 UTC)
+
+---
 
 ### v1.0.0 — 2026-09-07
 **First stable release**
