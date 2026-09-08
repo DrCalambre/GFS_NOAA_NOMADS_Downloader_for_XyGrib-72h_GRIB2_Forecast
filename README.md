@@ -438,6 +438,14 @@ If you find an issue, have an improvement, or want to add support for other mode
 
 ---
 
+### Wave data (WW3) displayed in XyGrib
+
+![WW3 wave data in XyGrib](screenshots/ww3-xygrib_02.jpg)
+
+*Wave data from NOAA's WaveWatch III (WW3) loaded in XyGrib. The screenshot shows significant wave height forecasts for a point in the South Atlantic (48.78°S 044.73°W) with values ranging from 2.5 m to 3.8 m over the forecast period. The data includes primary wave direction, period, and wind wave information, providing a complete picture of sea state conditions for maritime and coastal planning.*
+
+---
+
 ### The xygrib forecast log file
 
 ![XyGrib log](screenshots/xygrib-forecast-log.jpg)
