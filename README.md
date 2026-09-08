@@ -442,8 +442,6 @@ If you find an issue, have an improvement, or want to add support for other mode
 
 ![XyGrib log](screenshots/xygrib-forecast-log.jpg)
 
-*the log file (generated after configuring the task via anacron)*
-
 ![XyGrib forecast](screenshots/xygrib-forecast-log_02.jpg)
 
 *The log file showing a successful 336-hour (14-day) GFS and WW3 forecast download. The script downloaded 89 wave files (F000 to F336) with zero failures, demonstrating its robustness for extended horizons. The final GRIB files are 98 MB (GFS) and 70 MB (WW3).*
