@@ -9,7 +9,7 @@
 #/_______  /__|     \______  (____  /____(____  /__|_|  /___  /__|    \___  >
 #        \/                \/     \/          \/      \/    \/            \/ 
 # --------------------------------------------------------------------------------------------------------------------------------------
-# GFS NOAA NOMADS - v1.0.2 — 2026-09-08
+# GFS NOAA NOMADS - v1.0.3 — 2026-09-08
 # --------------------------------------------------------------------------------------------------------------------------------------
 # Descarga un pronóstico GFS de 0.25° directamente desde NOAA NOMADS
 # y construye un archivo GRIB2 compatible con XyGrib.
@@ -24,7 +24,14 @@
 #   - Limpieza automática de archivos temporales
 #   - Validación del formato GRIB final
 #   - Salida de progreso clara y compacta
-#   - [NUEVO] Descarga opcional de datos de olas (WW3) con detección inteligente de archivos disponibles
+#   - Descarga opcional de datos de olas (WW3) con detección inteligente de archivos disponibles
+#
+# v1.0.3 — FIX: la lista de horas a descargar/concatenar se genera UNA sola vez
+#          (array HOURS) en vez de recalcularse con "HOUR+=STEP" en tres lugares
+#          distintos. Antes, STEP se mutaba de 3 a 12 dentro del bucle de descarga
+#          y ese cambio "se filtraba" al bucle de reconstrucción del GRIB y al
+#          bucle de WW3, salteando silenciosamente archivos ya descargados cuando
+#          MAX_FORECAST > 240h.
 # ============================================================
 
 set -u
@@ -68,41 +75,26 @@ if [ "$MAX_FORECAST" -lt 0 ]; then
     exit 1
 fi
 
-# --- CONFIGURACIÓN DINÁMICA DEL INTERVALO ---
+# --- GENERACIÓN ÚNICA DE LA LISTA DE HORAS (FIX v1.0.3) ---
 # El modelo GFS 0.25° cambia su resolución temporal a partir de las 240 horas:
 #   - De 0 a 240 horas: datos cada 3 horas
 #   - De 240 a 384 horas: datos cada 12 horas
 #
-# Esta lógica ajusta automáticamente el intervalo (STEP) y calcula
-# el número exacto de archivos que se descargarán.
-
-if [ "$MAX_FORECAST" -le 240 ]; then
-    # Caso 1: Horizonte dentro del rango de alta resolución (≤ 240h)
-    # Se usa un intervalo fijo de 3 horas
-    STEP=3
-    EXPECTED_FILES=$((MAX_FORECAST / STEP + 1))
-else
-    # Caso 2: Horizonte en el rango de baja resolución (> 240h)
-    # Se necesita un enfoque mixto: 3h hasta 240h, 12h de 240h a MAX_FORECAST
-    
-    # Paso 1: Calcular archivos en el tramo de 0-240h (cada 3h)
-    # Fórmula: (240 / 3) + 1 = 81 archivos (f000 a f240)
-    STEP_3H=3
-    FILES_3H=$((240 / STEP_3H + 1))
-    
-    # Paso 2: Calcular archivos en el tramo de 240h a MAX_FORECAST (cada 12h)
-    # Se excluye el archivo f240 (ya contado en FILES_3H) usando -240 en el numerador
-    STEP_12H=12
-    REMAINING_HOURS=$((MAX_FORECAST - 240))
-    FILES_12H=$((REMAINING_HOURS / STEP_12H))
-    
-    # Paso 3: Sumar ambos tramos para obtener el total esperado
-    EXPECTED_FILES=$((FILES_3H + FILES_12H))
-    
-    # Paso 4: Establecer STEP para el bucle principal (inicia en 3h)
-    # El bucle cambiará dinámicamente a 12h cuando supere las 240h
-    STEP=3
-fi
+# En vez de recalcular esto con un contador HOUR+=STEP en cada lugar del script
+# que necesita la lista (descarga, reconstrucción del GRIB, WW3), la generamos
+# UNA sola vez acá y la guardamos en el array HOURS. Todo el resto del script
+# itera sobre este array, así que no hay forma de que se desincronice.
+HOURS=()
+h=0
+while [ "$h" -le "$MAX_FORECAST" ]; do
+    HOURS+=("$h")
+    if [ "$h" -lt 240 ]; then
+        h=$((h + 3))
+    else
+        h=$((h + 12))
+    fi
+done
+EXPECTED_FILES=${#HOURS[@]}
 
 # ------------------------------------------------------------
 # CONFIGURACIÓN DE LA REGIÓN
@@ -131,8 +123,8 @@ DOWNLOAD_WAVES=true
 
 # Directorio temporal para archivos intermedios (se limpia al finalizar)
 # El sufijo $$ añade el PID del proceso para evitar colisiones
-WORKDIR="/tmp/gfs-v1-${DATE}-$$"
-WAVE_WORKDIR="/tmp/wave-v1-${DATE}-$$"
+WORKDIR="/tmp/gfs-${DATE}-$$"
+WAVE_WORKDIR="/tmp/wave-${DATE}-$$"
 
 # Directorio de GRIB de XyGrib (donde se guarda el archivo final)
 XYGRIB_DIR="${HOME}/.xygrib/grib"
@@ -156,9 +148,11 @@ PAUSE=8
 # Retorna: 0 si está disponible, 1 si no
 test_cycle() {
     local cycle=$1
-    local date=$2
-    local test_url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?file=gfs.t${cycle}z.pgrb2.0p25.f000&dir=%2Fgfs.${date}%2F${cycle}%2Fatmos&subregion=&leftlon=-90&rightlon=-30&toplat=15&bottomlat=-60"
-    curl --output /dev/null --silent --head --fail "$test_url"
+    local d=$2
+    local test_url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?file=gfs.t${cycle}z.pgrb2.0p25.f000&dir=%2Fgfs.${d}%2F${cycle}%2Fatmos&subregion=&leftlon=${WEST}&rightlon=${EAST}&toplat=${NORTH}&bottomlat=${SOUTH}"
+    # GET liviano (rango de 1 byte) en vez de HEAD: el CGI de NOMADS no siempre
+    # responde bien a HEAD (falsos positivos/negativos conocidos en estos scripts).
+    curl --output /dev/null --silent --fail --range 0-0 "$test_url"
     return $?
 }
 
@@ -167,10 +161,10 @@ test_cycle() {
 # Parámetros: $1 = fecha (ej. "20260908")
 # Retorna: El ciclo disponible (ej. "12") o cadena vacía si ninguno funciona
 find_best_cycle() {
-    local date=$1
+    local d=$1
     for cycle in "${CYCLES[@]}"; do
         echo "  Probando ciclo ${cycle}Z..." >&2
-        if test_cycle "$cycle" "$date"; then
+        if test_cycle "$cycle" "$d"; then
             echo "$cycle"
             return 0
         fi
@@ -221,7 +215,7 @@ find_best_cycle_with_retry() {
 download_with_fallback() {
     local forecast=$1
     local primary_cycle=$2
-    local date=$3
+    local d=$3
     local output_file=$4
     
     # Base de la URL con placeholders {cycle} y {date} que se reemplazarán dinámicamente
@@ -229,7 +223,7 @@ download_with_fallback() {
     
     # --- Intento 1: Ciclo primario ---
     local url="${url_base//\{cycle\}/$primary_cycle}"
-    url="${url//\{date\}/$date}"
+    url="${url//\{date\}/$d}"
     if curl --fail --location --connect-timeout 30 --max-time 600 --retry 2 --retry-delay 5 --output "$output_file" "$url" 2>/dev/null; then
         echo "  ✅ ${primary_cycle}Z"
         return 0
@@ -239,7 +233,7 @@ download_with_fallback() {
     for alt_cycle in "${CYCLES[@]}"; do
         if [ "$alt_cycle" != "$primary_cycle" ]; then
             local alt_url="${url_base//\{cycle\}/$alt_cycle}"
-            alt_url="${alt_url//\{date\}/$date}"
+            alt_url="${alt_url//\{date\}/$d}"
             if curl --fail --location --connect-timeout 30 --max-time 600 --retry 1 --output "$output_file" "$alt_url" 2>/dev/null; then
                 echo "  ✅ ${alt_cycle}Z (fallback)"
                 return 1  # Éxito con fallback
@@ -257,10 +251,11 @@ download_with_fallback() {
 # Parámetros: $1 = fecha (ej. "20260907")
 # Retorna: El ciclo disponible (ej. "18") o cadena vacía si ninguno funciona
 find_best_wave_cycle() {
-    local date=$1
+    local d=$1
     for cycle in "${CYCLES[@]}"; do
-        local test_url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfswave.pl?dir=%2Fgfs.${date}%2F${cycle}%2Fwave%2Fgridded&file=gfswave.t${cycle}z.global.0p25.f000.grib2&all_var=on&all_lev=on"
-        if curl --output /dev/null --silent --head --fail "$test_url"; then
+        local test_url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfswave.pl?dir=%2Fgfs.${d}%2F${cycle}%2Fwave%2Fgridded&file=gfswave.t${cycle}z.global.0p25.f000.grib2&all_var=on&all_lev=on"
+        # GET liviano en vez de HEAD (mismo motivo que en test_cycle)
+        if curl --output /dev/null --silent --fail --range 0-0 "$test_url"; then
             echo "$cycle"
             return 0
         fi
@@ -304,12 +299,12 @@ find_best_wave_cycle_with_retry() {
 download_wave_data() {
     local forecast=$1
     local cycle=$2
-    local date=$3
+    local d=$3
     local output_file=$4
     
     # Estructura correcta para WW3 global 0.25° con all_var=on y all_lev=on
     local file="gfswave.t${cycle}z.global.0p25.f${forecast}.grib2"
-    local url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfswave.pl?dir=%2Fgfs.${date}%2F${cycle}%2Fwave%2Fgridded&file=${file}&all_var=on&all_lev=on&subregion=&toplat=${NORTH}&leftlon=${WEST}&rightlon=${EAST}&bottomlat=${SOUTH}"
+    local url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfswave.pl?dir=%2Fgfs.${d}%2F${cycle}%2Fwave%2Fgridded&file=${file}&all_var=on&all_lev=on&subregion=&toplat=${NORTH}&leftlon=${WEST}&rightlon=${EAST}&bottomlat=${SOUTH}"
     
     if curl --fail --location --connect-timeout 30 --max-time 600 --retry 2 --retry-delay 5 --output "$output_file" "$url" 2>/dev/null; then
         return 0
@@ -325,10 +320,11 @@ download_wave_data() {
 check_wave_file_exists() {
     local forecast=$1
     local cycle=$2
-    local date=$3
+    local d=$3
     local file="gfswave.t${cycle}z.global.0p25.f${forecast}.grib2"
-    local test_url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfswave.pl?dir=%2Fgfs.${date}%2F${cycle}%2Fwave%2Fgridded&file=${file}&all_var=on&all_lev=on&subregion=&toplat=${NORTH}&leftlon=${WEST}&rightlon=${EAST}&bottomlat=${SOUTH}"
-    curl --output /dev/null --silent --head --fail "$test_url"
+    local test_url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfswave.pl?dir=%2Fgfs.${d}%2F${cycle}%2Fwave%2Fgridded&file=${file}&all_var=on&all_lev=on&subregion=&toplat=${NORTH}&leftlon=${WEST}&rightlon=${EAST}&bottomlat=${SOUTH}"
+    # GET liviano en vez de HEAD (mismo motivo que en test_cycle)
+    curl --output /dev/null --silent --fail --range 0-0 "$test_url"
     return $?
 }
 
@@ -346,7 +342,7 @@ fi
 # Mostrar cabecera informativa
 echo
 echo "============================================================"
-echo " GFS NOAA NOMADS - v1.0.2"
+echo " GFS NOAA NOMADS - v1.0.3"
 echo " ${MAX_FORECAST}-hour forecast for XyGrib"
 if [ "$DOWNLOAD_WAVES" = true ]; then
     echo " + Wave data (WW3) with intelligent file detection"
@@ -382,7 +378,7 @@ echo "Date (current) : ${DATE}"
 echo "Date (used)    : ${USED_DATE}"
 echo "GFS Cycle      : ${BEST_CYCLE}Z"
 echo "Horizon        : f000 → f${MAX_FORECAST}"
-echo "Interval       : ${STEP} hours (dynamic if >240h)"
+echo "Interval       : 3h (12h beyond 240h)"
 echo "Time steps     : ${EXPECTED_FILES}"
 echo "Region         : ${WEST}°W to ${EAST}°W / ${SOUTH}°S to ${NORTH}°N"
 echo "GFS output     : ${OUTPUT}"
@@ -407,17 +403,8 @@ FAILED=0
 FALLBACK_USED=0
 TOTAL=0
 
-# Bucle principal de descarga
-# El intervalo (STEP) puede cambiar dinámicamente si MAX_FORECAST > 240
-for ((HOUR=0; HOUR<=MAX_FORECAST; HOUR+=STEP)); do
-    
-    # --- LÓGICA DE CAMBIO DE RESOLUCIÓN ---
-    # Si superamos las 240h y aún estamos en STEP=3, cambiamos a STEP=12
-    # Esto refleja la resolución real del modelo GFS 0.25°
-    if [ "$HOUR" -ge 240 ] && [ "$STEP" -ne 12 ]; then
-        STEP=12
-        # Nota: No recalculamos EXPECTED_FILES aquí porque ya se calculó al inicio
-    fi
+# Bucle principal de descarga: itera sobre el array HOURS ya calculado
+for HOUR in "${HOURS[@]}"; do
     
     # Formatear el número de hora (ej. 003, 012, 168)
     FORECAST=$(printf "%03d" "${HOUR}")
@@ -485,8 +472,11 @@ echo
 # Eliminar archivo anterior si existe
 rm -f "$OUTPUT"
 
-# Concatenar todos los archivos parciales en orden cronológico
-for ((HOUR=0; HOUR<=MAX_FORECAST; HOUR+=STEP)); do
+# Concatenar todos los archivos parciales en orden cronológico.
+# FIX v1.0.3: se itera sobre el mismo array HOURS usado para la descarga,
+# en vez de recalcular el rango con "HOUR+=STEP" (que antes usaba un STEP
+# ya mutado a 12, saltándose archivos de 3h ya descargados).
+for HOUR in "${HOURS[@]}"; do
     FORECAST=$(printf "%03d" "${HOUR}")
     PART="${WORKDIR}/gfs_${FORECAST}.grib2"
     if [ -f "$PART" ] && [ -s "$PART" ]; then
@@ -551,10 +541,10 @@ if [ "$DOWNLOAD_WAVES" = true ]; then
         WAVE_FAILED=0
         WAVE_TOTAL=0
         
-        # Bucle inteligente: probar archivos hasta que uno falle o se alcance MAX_FORECAST
-        HOUR=0
-        while [ "$HOUR" -le "$MAX_FORECAST" ]; do
-            # Formatear el número de hora (ej. 003, 012, 168)
+        # Bucle inteligente: itera sobre el mismo array HOURS y se detiene si un
+        # archivo no existe o falla. FIX v1.0.3: ya no usa "HOUR+=STEP" con un
+        # STEP potencialmente mutado; usa las horas reales calculadas al inicio.
+        for HOUR in "${HOURS[@]}"; do
             FORECAST=$(printf "%03d" "${HOUR}")
             WAVE_PART="${WAVE_WORKDIR}/wave_${FORECAST}.grib2"
             
@@ -584,9 +574,6 @@ if [ "$DOWNLOAD_WAVES" = true ]; then
                 break
             fi
             
-            # Avanzar al siguiente paso
-            HOUR=$((HOUR + STEP))
-            
             # Pausa entre solicitudes
             sleep "$PAUSE"
         done
@@ -613,8 +600,8 @@ if [ "$DOWNLOAD_WAVES" = true ]; then
 
             rm -f "$WAVE_OUTPUT"
 
-            # Reconstruir la lista de archivos descargados
-            for ((HOUR=0; HOUR<=MAX_FORECAST; HOUR+=STEP)); do
+            # Reconstruir la lista de archivos descargados (mismo array HOURS)
+            for HOUR in "${HOURS[@]}"; do
                 FORECAST=$(printf "%03d" "${HOUR}")
                 WAVE_PART="${WAVE_WORKDIR}/wave_${FORECAST}.grib2"
                 if [ -f "$WAVE_PART" ] && [ -s "$WAVE_PART" ]; then
@@ -659,7 +646,7 @@ echo "✅ Temporary files removed."
 
 echo
 echo "============================================================"
-echo " v1.0.2 COMPLETED"
+echo " v1.0.3 COMPLETED"
 echo "============================================================"
 echo
 echo "GFS file:"
