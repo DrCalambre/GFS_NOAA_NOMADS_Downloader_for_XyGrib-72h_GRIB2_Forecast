@@ -438,6 +438,12 @@ If you find an issue, have an improvement, or want to add support for other mode
 
 *Information from the grib2 file downloaded using this script*
 
+### Wave data (WW3) displayed in XyGrib
+
+![WW3 wave data in XyGrib](screenshots/ww3-xygrib.jpg)
+
+*Wave data from NOAA's WaveWatch III (WW3) loaded in XyGrib, showing significant wave height, direction, and period.*
+
 ## 📋 Changelog
 
 ### v1.0.2 — 2026-09-08
