@@ -461,6 +461,8 @@ The screenshot shows significant wave height forecasts for a point in the South 
 
 ![XyGrib log](screenshots/xygrib-forecast-log.jpg)
 
+---
+
 ![XyGrib forecast](screenshots/xygrib-forecast-log_02.jpg)
 
 *The log file showing a successful 336-hour (14-day) GFS and WW3 forecast download. The script downloaded 89 wave files (F000 to F336) with zero failures, demonstrating its robustness for extended horizons. The final GRIB files are 98 MB (GFS) and 70 MB (WW3).*
