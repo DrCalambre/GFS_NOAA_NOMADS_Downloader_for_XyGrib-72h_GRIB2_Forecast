@@ -151,6 +151,7 @@ The script can optionally download wave data from NOAA's WaveWatch III (WW3) mod
 - **Primary wave direction** (DIRPW)
 - **Primary wave period** (PERPW)
 - **Wind direction and speed** at surface
+> 📺 **Video tutorial:** [How to open WW3 and GFS files together in XyGrib](https://www.youtube.com/watch?v=_JHiHkSOf8E)
 
 ### Enable/disable wave data
 
@@ -443,6 +444,18 @@ If you find an issue, have an improvement, or want to add support for other mode
 ![WW3 wave data in XyGrib](screenshots/ww3-xygrib_02.jpg)
 
 *Wave data from NOAA's WaveWatch III (WW3) loaded in XyGrib. The screenshot shows significant wave height forecasts for a point in the South Atlantic (48.78°S 044.73°W) with values ranging from 2.5 m to 3.8 m over the forecast period. The data includes primary wave direction, period, and wind wave information, providing a complete picture of sea state conditions for maritime and coastal planning.*
+
+---
+
+### Wave data (WW3) displayed in XyGrib
+
+[![WW3 wave data in XyGrib - Click for tutorial](screenshots/video_howto_WW3_NOAA_grib2.jpg)](https://www.youtube.com/watch?v=_JHiHkSOf8E)
+
+*Click the image to watch the tutorial: [How to open WW3 and GFS files together in XyGrib](https://www.youtube.com/watch?v=_JHiHkSOf8E)*
+
+The screenshot shows significant wave height forecasts for a point in the South Atlantic (48.78°S 044.73°W) with values ranging from 2.5 m to 3.8 m over the forecast period.
+
+**⚠️ Important:** Wave data is not displayed automatically in XyGrib. You need to enable it from the menu: select **"Altura significativa de las olas"**, **"Dirección del mar"**, or **"Período del mar"** to view the wave layers.
 
 ---
 
