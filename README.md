@@ -447,8 +447,6 @@ If you find an issue, have an improvement, or want to add support for other mode
 
 ---
 
-### Wave data (WW3) displayed in XyGrib
-
 [![WW3 wave data in XyGrib - Click for tutorial](screenshots/video_howto_WW3_NOAA_grib2.jpg)](https://www.youtube.com/watch?v=_JHiHkSOf8E)
 
 *Click the image to watch the tutorial: [How to open WW3 and GFS files together in XyGrib](https://www.youtube.com/watch?v=_JHiHkSOf8E)*
