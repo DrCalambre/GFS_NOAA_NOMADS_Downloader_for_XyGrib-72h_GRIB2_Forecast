@@ -453,7 +453,7 @@ If you find an issue, have an improvement, or want to add support for other mode
 
 The screenshot shows significant wave height forecasts for a point in the South Atlantic (48.78°S 044.73°W) with values ranging from 2.5 m to 3.8 m over the forecast period.
 
-**⚠️ Important:** Wave data is not displayed automatically in XyGrib. You need to enable it from the menu: select **"Altura significativa de las olas"**, **"Dirección del mar"**, or **"Período del mar"** to view the wave layers.
+⚠️ Important. Wave data is not displayed automatically in XyGrib. You need to enable it from the menu: select "Altura significativa de las olas", "Dirección del mar", or "Período del mar" to view the wave layers.
 
 ---
 
