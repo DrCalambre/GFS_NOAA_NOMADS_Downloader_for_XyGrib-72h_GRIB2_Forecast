@@ -539,5 +539,22 @@ Developed from tests conducted with **XyGrib 1.2.6** on **antiX Linux 26**.
 Thanks to the XyGrib community and NOAA/NCEP for keeping the data open.
 
 ---
+## 📸 Why this project exists
+
+"Piedra del Fraile" 🏔️❄️🇦🇷
+
+This photograph was taken on July 11, 2026, while following the trail toward Piedra del Fraile, before reaching the refuge.
+
+In the depths of winter, the landscape takes on an almost otherworldly appearance. The forest is covered in a delicate layer of frost, turning every branch and shrub into a pale silhouette. Below, the cold waters of the Río Eléctrico flow quietly through the valley, surrounded by rounded stones and scattered boulders.
+
+Beyond the river, the mountains rise dramatically on both sides, creating a natural corridor that leads the eye toward the distant, snow-covered peaks of the Andes. The contrast between the dark rock, the frozen vegetation, the icy blue water and the small patch of blue sky makes this scene feel both wild and incredibly peaceful.
+
+This is one of those places where the immensity of Patagonia becomes truly apparent. Far from the crowds and deep into the wilderness, the trail follows the Río Eléctrico through a landscape shaped by ice, water and mountains.
+
+A quiet winter moment in one of the most beautiful corners of Argentine Patagonia. 🏔️❄️🇦🇷
+
+![Piedra del Fraile, Patagonia](screenshots/PiedraDelFraile.jpg)
+
+— The landscape that inspired this project. Weather in Patagonia can change in minutes, and having reliable forecast data is essential for anyone venturing into these mountains.
 
 **Fair winds!** 🌬️
