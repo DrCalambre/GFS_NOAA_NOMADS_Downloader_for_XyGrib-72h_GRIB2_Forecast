@@ -459,7 +459,7 @@ The screenshot shows significant wave height forecasts for a point in the South 
 
 ### The xygrib forecast log file
 
-![XyGrib log](screenshots/xygrib-forecast-log.jpg)
+![XyGrib-log](screenshots/xygrib-forecast-log.jpg)
 
 ---
 
