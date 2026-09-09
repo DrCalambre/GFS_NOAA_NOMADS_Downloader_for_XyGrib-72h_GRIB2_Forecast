@@ -411,7 +411,7 @@ If you find an issue, have an improvement, or want to add support for other mode
 
 ### Selecting the GRIB file in XyGrib
 
-![Selecting GRIB file](screenshots/select-grib.jpg)
+![GRIB file](screenshots/select-grib.jpg)
 
 *The generated GRIB2 file ready to be opened in XyGrib.*
 
