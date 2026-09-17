@@ -407,6 +407,35 @@ If you find an issue, have an improvement, or want to add support for other mode
 
 ---
 
+## 🔗 Related projects
+
+This script covers **wind and waves** with zero dependencies. If you need **ocean currents** or additional models, check out these complementary projects:
+
+### 🌊 marine-grib-downloader — by @Mike101202
+
+**[https://github.com/Mike101202/marine-grib-downloader](https://github.com/Mike101202/marine-grib-downloader)**
+
+A more comprehensive downloader that covers:
+
+- **Ocean currents** (HYCOM, RTOFS) — the piece wind/wave-only scripts can't cover
+- **DWD ICON** (German model)
+- **ECMWF** (European model)
+- **GFS** and **GFS-Wave** (WW3)
+- Support for **OpenCPN**, **qtVlm**, and **XyGrib**
+
+**Trade-off:** requires a heavier stack (Python, xarray, cdo, wgrib2, eccodes), but it covers what this script doesn't.
+
+### 📊 Which one should you use?
+
+| Your need | Recommended script |
+|---|---|
+| **Wind + waves, no dependencies** | ✅ **This script** (`xygrib-noaa.sh`) |
+| **Currents + HYCOM + RTOFS + ICON + ECMWF** | ✅ [marine-grib-downloader](https://github.com/Mike101202/marine-grib-downloader) |
+
+Both projects share the same goal: **keeping XyGrib useful while the official OpenGribs server is down.** Choose based on what you actually need.
+
+---
+
 ## 📸 Screenshots
 
 ### Selecting the GRIB file in XyGrib
