@@ -425,14 +425,36 @@ A more comprehensive downloader that covers:
 
 **Trade-off:** requires a heavier stack (Python, xarray, cdo, wgrib2, eccodes), but it covers what this script doesn't.
 
+### 🛰️ frfa's XyGrib fork — rebuilding XyGrib itself
+
+**[https://github.com/frfa/XyGrib](https://github.com/frfa/XyGrib)**
+
+A more ambitious effort: a fork of **XyGrib itself** (the viewer, not a downloader script), aiming to let XyGrib download directly from GRIB service providers instead of relying on an intermediary server like OpenGribs. This is a much deeper undertaking than any downloader script — it touches XyGrib's own codebase.
+
+### 🔧 GFS-NOAA-NOMADS-Downloader — POSIX/CLI fork by @frfa
+
+**[https://github.com/frfa/GFS-NOAA-NOMADS-Downloader](https://github.com/frfa/GFS-NOAA-NOMADS-Downloader)**
+
+A fork of *this* script, rewritten for a more UNIX-like experience:
+
+- **POSIX-compliant** — runs under `/bin/dash`, doesn't require Bash
+- Full **command-line flag interface** (`-r` region, `-s` dataset, `-c` cycle, `-f` forecast hours, `-p` pause, `--noexec` dry-run, `--config` file, and more)
+- **Predefined regions and datasets**, selectable by name
+- **Config file support** (global, user, local, or explicit path)
+- Cleanup `trap` on interrupt or error
+
+**Note:** licensed under **GPLv3** (this script remains MIT).
+
 ### 📊 Which one should you use?
 
 | Your need | Recommended script |
 |---|---|
-| **Wind + waves, no dependencies** | ✅ **This script** (`xygrib-noaa.sh`) |
+| **Wind + waves, no dependencies, edit-and-run** | ✅ **This script** (`xygrib-noaa.sh`) |
 | **Currents + HYCOM + RTOFS + ICON + ECMWF** | ✅ [marine-grib-downloader](https://github.com/Mike101202/marine-grib-downloader) |
+| **Same wind+waves, but CLI flags / POSIX / config files** | ✅ [frfa's fork](https://github.com/frfa/GFS-NOAA-NOMADS-Downloader) |
+| **Want XyGrib itself to download natively, no external script** | 👀 [frfa's XyGrib fork](https://github.com/frfa/XyGrib) *(work in progress)* |
 
-Both projects share the same goal: **keeping XyGrib useful while the official OpenGribs server is down.** Choose based on what you actually need.
+All these projects share the same goal: **keeping XyGrib useful while the official OpenGribs server is down.** Choose based on what you actually need.
 
 ---
 
