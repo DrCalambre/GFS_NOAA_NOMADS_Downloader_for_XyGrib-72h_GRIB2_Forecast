@@ -411,6 +411,37 @@ If you find an issue, have an improvement, or want to add support for other mode
 
 This script covers **wind and waves** with zero dependencies. If you need **ocean currents** or additional models, check out these complementary projects:
 
+### 📧 Saildocs — email-based GRIB requests, zero install
+
+**[https://www.saildocs.com](https://www.saildocs.com)**
+
+Not a script at all: the classic email-based GRIB service sailors have relied on for years. If you don't want to touch a terminal — no install, works from any device with an email client, any OS.
+
+Send an email to `query@saildocs.com` with a body like:
+
+```
+send GFS:43N,34N,22E,37E|0.25,0.25|0,3..240|WIND,GUST
+```
+
+- `send` — request the file once (use `sub` instead for a recurring subscription)
+- `GFS` — the model (Global Forecast System)
+- `43N,34N,22E,37E` — bounding box as North,South,West,East
+- `|0.25,0.25|` — grid resolution in degrees (lon,lat); 0.25° is GFS's finest native resolution
+- `|0,3..240|` — forecast hours. The `..` is a range operator: it takes the difference between the two numbers right before it (here, 3 − 0 = 3) as the step, and repeats it up to the number after `..`. So `0,3..240` means every 3 hours from 0 to 240h (10 days).
+- `|WIND,GUST` — requested variables, comma-separated, no spaces (add `,PRMSL`, `,WAVES`, etc. if needed)
+
+GFS isn't the only model available — swap the model name right after `send`:
+
+- `WW3` — WaveWatch III wave data (height/period/direction), same syntax as GFS above
+- `NAVGEM` — US Navy global model, coarser (~0.18°/multiples of 1°), useful as a second opinion
+- `COAMPS` — higher-resolution coastal/regional model (~0.2°), but only covers specific coastal areas
+- `RTOFS` — HYCOM-based ocean current data, e.g. `send RTOFS:43N,34N,22E,37E|0.1,0.1|0,24..120|` (no variable list needed — unverified against the official spec, test with a short window first)
+- `ECMWF` data is also available (coverage/resolution may differ from the models above — worth testing with a short window first)
+
+**Honest caveat:** Saildocs applies its own bandwidth-friendly limits on top of the raw model. GFS 0.25°/3-hourly is only guaranteed through 120h (5 days); beyond that it typically drops to a coarser grid/interval automatically. If you need the full resolution for a longer horizon, split it into two requests.
+
+The file comes back as an email attachment you open directly in XyGrib.
+
 ### 🌊 marine-grib-downloader — by @Mike101202
 
 **[https://github.com/Mike101202/marine-grib-downloader](https://github.com/Mike101202/marine-grib-downloader)**
@@ -449,6 +480,7 @@ A fork of *this* script, rewritten for a more UNIX-like experience:
 
 | Your need | Recommended script |
 |---|---|
+| **No terminal, no install, any OS — just email** | ✅ [Saildocs](https://www.saildocs.com) |
 | **Wind + waves, no dependencies, edit-and-run** | ✅ **This script** (`xygrib-noaa.sh`) |
 | **Currents + HYCOM + RTOFS + ICON + ECMWF** | ✅ [marine-grib-downloader](https://github.com/Mike101202/marine-grib-downloader) |
 | **Same wind+waves, but CLI flags / POSIX / config files** | ✅ [frfa's fork](https://github.com/frfa/GFS-NOAA-NOMADS-Downloader) |
