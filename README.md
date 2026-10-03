@@ -5,7 +5,7 @@
 
 > **Direct download from NOAA/NOMADS of a GRIB2 forecast, ready for XyGrib.**  
 > Eliminates dependency on the OpenGribs intermediary server.  
-> **Now with optional wave data (WW3)!** 🌊
+> **Now with optional wave data (WW3) and a combined GFS+WW3 file for a single XyGrib session.** 🌊
 
 ---
 
@@ -33,7 +33,7 @@ This script **downloads directly from the official source (NOAA NOMADS)** and bu
 | **Cycle** | **Automatic detection** (18Z → 12Z → 06Z → 00Z) with smart fallback |
 | **Horizon** | 0 – 384 hours (configurable, default 72h / 3 days) |
 | **Interval** | 3 hours (0-240h) / 12 hours (240-384h) |
-| **Region** | `-90°W` to `-30°W` / `-20°S` to `-60°S`<br>(South America and surrounding waters) *configurable* |
+| **Region** | `-90°W` to `-50°W` / `-60°S` to `-38°N`<br>(South America and surrounding waters) *configurable* |
 | **Variables** | Temperature, wind, gusts, pressure, humidity, cloud cover, precipitation, snow, CAPE, **0°C isotherm**, freezing rain, etc. |
 | **Output** | Single GRIB2 in `~/.xygrib/grib/GFS_NOAA_YYYYMMDD_XXhs.grib2` |
 | **Temporaries** | Stored in `/tmp/gfs-...` and **automatically cleaned up** after execution |
@@ -42,6 +42,7 @@ This script **downloads directly from the official source (NOAA NOMADS)** and bu
 | **Fallback date** | Automatic retry with previous days if no cycles available |
 | **Progress** | Compact output with per-file status (`[01/25] F000 → ✅ 12Z`) |
 | **🌊 Wave data (WW3)** | **Optional** — height, direction, period, with intelligent file detection |
+| **🌊 Combined file** | **New in v1.0.4** — GFS + WW3 concatenated into one GRIB2, so wind and waves appear in the same XyGrib session |
 
 ---
 
@@ -87,37 +88,146 @@ chmod +x xygrib-noaa.sh
 3. Concatenates the files into a **single GRIB2**.
 4. Saves it to `~/.xygrib/grib/GFS_NOAA_YYYYMMDD_XXhs.grib2`.
 5. Optionally, downloads wave data (WW3) from NOAA NOMADS, saving it as `WW3_NOAA_YYYYMMDD_XXhs.grib2`.
-6. Displays size and location information.
+6. Optionally, if `DOWNLOAD_WAVES=true`, builds a combined `GFS_WW3_NOAA_YYYYMMDD_XXhs.grib2` file so wind and waves appear together in a single XyGrib session.
+7. Displays size and location information.
 
 ### Example output
 
 ```text
 ============================================================
- GFS NOAA NOMADS - v1.0.3
+ GFS NOAA NOMADS - v1.0.4
  72-hour forecast for XyGrib
- + Wave data (WW3)
+ + Wave data (WW3) with intelligent file detection
+ + Combined GFS+WW3 file for a single XyGrib session
 ============================================================
 
-Date        : 20260908
-Cycle       : 12Z
-Horizon     : f000 → f072
-Interval    : 3 hours (12h beyond 240h)
-Time steps  : 25
+🔍 Detecting available GFS cycle...
+  Probando fecha 20261003...
+  Probando ciclo 18Z...
+  Probando ciclo 12Z...
+  Probando ciclo 06Z...
+  Probando ciclo 00Z...
+  Probando fecha 20261002...
+  Probando ciclo 18Z...
+ℹ️  NOTE: Using GFS data from 20261002 (current date 20261003 has no cycles available yet).
+   This is normal when running the script early in the day (00:00-04:00 UTC).
+✅ Using GFS cycle: 18Z (date: 20261002)
 
-...
-[25/25] F072 →  ✅ 4.0M [12Z]
+Date (current) : 20261003
+Date (used)    : 20261002
+GFS Cycle      : 18Z
+Horizon        : f000 → f72
+Interval       : 3h (12h beyond 240h)
+Time steps     : 25
+Region         : -90°W to -50°W / -60°S to -38°N
+GFS output     : /home/antix1/.xygrib/grib/GFS_NOAA_20261003_72hs.grib2
+Wave output    : /home/antix1/.xygrib/grib/WW3_NOAA_20261003_72hs.grib2
+Combined output: /home/antix1/.xygrib/grib/GFS_WW3_NOAA_20261003_72hs.grib2
+Temp dir       : /tmp/gfs-20261003-17935
+
+============================================================
+ DOWNLOADING GFS (weather)
+============================================================
+
+[01/25] F000 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[02/25] F003 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[03/25] F006 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[04/25] F009 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[05/25] F012 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[06/25] F015 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[07/25] F018 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[08/25] F021 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[09/25] F024 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[10/25] F027 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[11/25] F030 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[12/25] F033 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[13/25] F036 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[14/25] F039 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[15/25] F042 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[16/25] F045 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[17/25] F048 →   ✅ 18Z
+ ✅ 1,4M [18Z]
+[18/25] F051 →   ✅ 18Z
+ ✅ 1,3M [18Z]
+[19/25] F054 →   ✅ 18Z
+ ✅ 1,3M [18Z]
+[20/25] F057 →   ✅ 18Z
+ ✅ 1,3M [18Z]
+[21/25] F060 →   ✅ 18Z
+ ✅ 1,3M [18Z]
+[22/25] F063 →   ✅ 18Z
+ ✅ 1,3M [18Z]
+[23/25] F066 →   ✅ 18Z
+ ✅ 1,3M [18Z]
+[24/25] F069 →   ✅ 18Z
+ ✅ 1,3M [18Z]
+[25/25] F072 →   ✅ 18Z
+ ✅ 1,3M [18Z]
+
+============================================================
+ GFS RESULTS
+============================================================
+
+✅ Successful       : 25
+🔄 Fallback used    : 0
+❌ Failed           : 0
+📊 Total            : 25
+
+Building final GFS GRIB2...
+
+✅ Final GFS GRIB created:
+-rw-rw-r-- 1 antix1 antix1 34M oct  2 21:23 /home/antix1/.xygrib/grib/GFS_NOAA_20261003_72hs.grib2
+✅ File validation: GRIB format confirmed.
 
 ============================================================
  DOWNLOADING WAVE DATA (WW3)
 ============================================================
 
 🔍 Detecting available WW3 cycle...
-✅ Using WW3 cycle: 12Z (date: 20260908)
+ℹ️  NOTE: Using WW3 data from 20261002 (current date 20261003 has no cycles available yet).
+✅ Using WW3 cycle: 18Z (date: 20261002)
 
-[01] WAVE F000 →  ✅ 772K
-[02] WAVE F003 →  ✅ 772K
-...
-[25] WAVE F072 →  ✅ 824K
+[01] WAVE F000 →  ✅ 308K
+[02] WAVE F003 →  ✅ 312K
+[03] WAVE F006 →  ✅ 312K
+[04] WAVE F009 →  ✅ 308K
+[05] WAVE F012 →  ✅ 308K
+[06] WAVE F015 →  ✅ 308K
+[07] WAVE F018 →  ✅ 308K
+[08] WAVE F021 →  ✅ 312K
+[09] WAVE F024 →  ✅ 312K
+[10] WAVE F027 →  ✅ 316K
+[11] WAVE F030 →  ✅ 316K
+[12] WAVE F033 →  ✅ 316K
+[13] WAVE F036 →  ✅ 320K
+[14] WAVE F039 →  ✅ 324K
+[15] WAVE F042 →  ✅ 324K
+[16] WAVE F045 →  ✅ 328K
+[17] WAVE F048 →  ✅ 328K
+[18] WAVE F051 →  ✅ 332K
+[19] WAVE F054 →  ✅ 336K
+[20] WAVE F057 →  ✅ 340K
+[21] WAVE F060 →  ✅ 340K
+[22] WAVE F063 →  ✅ 340K
+[23] WAVE F066 →  ✅ 344K
+[24] WAVE F069 →  ✅ 344K
+[25] WAVE F072 →  ✅ 340K
 
 ============================================================
  WAVE RESULTS
@@ -126,6 +236,34 @@ Time steps  : 25
 ✅ Successful : 25
 ❌ Failed    : 0
 📊 Total     : 25
+
+Building final Wave GRIB2...
+
+✅ Final Wave GRIB created:
+-rw-rw-r-- 1 antix1 antix1 7,9M oct  2 21:30 /home/antix1/.xygrib/grib/WW3_NOAA_20261003_72hs.grib2
+✅ File validation: GRIB format confirmed.
+✅ Combined GRIB (GFS + WW3) created:
+-rw-rw-r-- 1 antix1 antix1 41M oct  2 21:30 /home/antix1/.xygrib/grib/GFS_WW3_NOAA_20261003_72hs.grib2
+🧹 Cleaning temporary files...
+✅ Temporary files removed.
+
+============================================================
+ v1.0.4 COMPLETED
+============================================================
+
+GFS file:
+  /home/antix1/.xygrib/grib/GFS_NOAA_20261003_72hs.grib2
+
+Wave file (WW3):
+  /home/antix1/.xygrib/grib/WW3_NOAA_20261003_72hs.grib2
+
+Combined file (GFS + WW3, recommended for XyGrib):
+  /home/antix1/.xygrib/grib/GFS_WW3_NOAA_20261003_72hs.grib2
+
+You can now open them in XyGrib:
+  File → Open GRIB...
+
+============================================================
 ```
 
 ---
@@ -139,7 +277,7 @@ You can edit the script to adjust these parameters:
 | `MAX_FORECAST` | Forecast horizon in hours (0-384) | `72` |
 | `MAX_DAYS_BACK` | Days to look back if current date has no cycles | `3` |
 | `PAUSE` | Pause between downloads (seconds) | `8` |
-| `WEST`, `EAST`, `NORTH`, `SOUTH` | Geographic region | `-90`, `-30`, `-20`, `-60` |
+| `WEST`, `EAST`, `NORTH`, `SOUTH` | Geographic region | `-90`, `-50`, `-38`, `-60` |
 
 ---
 
@@ -176,6 +314,37 @@ DOWNLOAD_WAVES=true   # or false
   ```
 - You can open it in XyGrib together with the GFS file to overlay weather and wave information.
 
+### 🔗 Combined GFS + WW3 file (v1.0.4)
+
+XyGrib can only open **one GRIB file at a time** — opening a second one replaces the first. To see wind (from GFS) and waves (from WW3) together in the same table and map, the script now produces a third file that concatenates both:
+
+```text
+~/.xygrib/grib/GFS_WW3_NOAA_YYYYMMDD_XXhs.grib2
+```
+
+This file is built by appending the WW3 GRIB2 after the GFS GRIB2. Since GRIB2 is a sequence of self-contained messages, XyGrib reads both seamlessly — GFS records (wind, temperature, pressure) and WW3 records (swell, wind waves, primary waves) live under different keys internally, so there is no collision.
+
+**Recommended for XyGrib**: open the combined file instead of the two separate ones.
+
+### ⚠️ Requirement: swell data needs a patched XyGrib
+
+The NOAA WW3 swell partitions (`shts`, `mpts`, `swdir`) are encoded with `surfaceType1=241` ("Ordered Sequence of Data"), which **the current XyGrib codebase does not recognize**. Without a fix, XyGrib loads the combined file but **swell height, period and direction will not display** — only wind waves and primary waves will.
+
+The fix is not merged upstream yet. It is available in a fork:
+
+**https://github.com/DrCalambre/XyGrib** — branch `fix-swell-241`
+
+To build it:
+
+```bash
+git clone https://github.com/DrCalambre/XyGrib
+cd XyGrib
+git checkout fix-swell-241
+mkdir build && cd build && cmake .. && make -j$(nproc)
+```
+
+For the full technical discussion (diagnosis, `grib_ls` evidence, why the fix is scoped to `discipline==10`, verification against GFS), see [issue #326](https://github.com/opengribs/XyGrib/issues/326).
+
 ---
 
 ## 🗺️ Adjusting the geographic area
@@ -183,8 +352,8 @@ DOWNLOAD_WAVES=true   # or false
 The script downloads a GRIB2 file for a specific region. By default, it covers:
 
 ```
-West:  -90°  →  East:  -30°
-North: -20°  →  South: -60°
+West:  -90°  →  East:  -50°
+North: -38°  →  South: -60°
 ```
 
 This area includes the southern cone of South America and surrounding waters.
@@ -264,6 +433,7 @@ The script was tested on **XyGrib 1.2.6 / antiX Linux 26** with the following ve
 | Snow depth | 0.0 cm |
 | **0°C isotherm** | **1147 m** ✅ |
 | **Significant wave height** | ✅ Available (WW3) |
+| **Swell (height, period, direction)** | ✅ Available with patched XyGrib (see Wave data section) |
 
 ---
 
@@ -292,7 +462,8 @@ The script was tested on **XyGrib 1.2.6 / antiX Linux 26** with the following ve
 ```text
 ~/.xygrib/grib/
 ├── GFS_NOAA_YYYYMMDD_XXhs.grib2
-└── WW3_NOAA_YYYYMMDD_XXhs.grib2  (if DOWNLOAD_WAVES=true)
+├── WW3_NOAA_YYYYMMDD_XXhs.grib2        (if DOWNLOAD_WAVES=true)
+└── GFS_WW3_NOAA_YYYYMMDD_XXhs.grib2    (if DOWNLOAD_WAVES=true)
 ```
 
 ---
@@ -304,6 +475,7 @@ The script was tested on **XyGrib 1.2.6 / antiX Linux 26** with the following ve
 3. **Temporary files:** They are kept in `/tmp/gfs-...` and `/tmp/wave-...` for debugging if needed.
 4. **CDO compatibility:** If you run `cdo showname` and get `Unsupported file structure`, **don't worry** — XyGrib can still open the file. This happens with some GRIB structures that CDO can't interpret but XyGrib handles fine.
 5. **Wave data:** WW3 data is optional and can be enabled/disabled with `DOWNLOAD_WAVES`. It uses `all_var=on` and `all_lev=on` for reliability, which means the file includes all available wave variables.
+6. **Swell data (v1.0.4):** The combined file includes swell records, but seeing them in XyGrib requires the patch described in the Wave data section. Wind waves and primary waves work with stock XyGrib.
 
 ---
 
@@ -399,6 +571,12 @@ tail -f /home/your_user/xygrib-forecast.log
 - The script will automatically retry with previous days if no WW3 cycle is available.
 - If the issue persists, check your internet connection and NOAA's service status.
 
+### Swell data doesn't show up in the combined file
+
+- XyGrib must be patched to recognize `surfaceType1=241` used by NOAA for swell partitions. See the [requirement section](#-requirement-swell-data-needs-a-patched-xygrib) above.
+- Without the patch, wind waves and primary waves still display correctly — only swell is affected.
+- The GFS file opens fine on its own; the issue is specific to swell records inside the combined file.
+
 ---
 
 ## 🤝 Contributing
@@ -461,6 +639,8 @@ A more comprehensive downloader that covers:
 **[https://github.com/frfa/XyGrib](https://github.com/frfa/XyGrib)**
 
 A more ambitious effort: a fork of **XyGrib itself** (the viewer, not a downloader script), aiming to let XyGrib download directly from GRIB service providers instead of relying on an intermediary server like OpenGribs. This is a much deeper undertaking than any downloader script — it touches XyGrib's own codebase.
+
+**Note:** this script's combined GFS+WW3 file depends on a fix that is **not yet merged into frfa's fork**. The fix lives in `DrCalambre/XyGrib`, branch `fix-swell-241` — see the [requirement section](#-requirement-swell-data-needs-a-patched-xygrib) above. Once merged upstream, no fork will be needed.
 
 ### 🔧 GFS-NOAA-NOMADS-Downloader — POSIX/CLI fork by @frfa
 
@@ -562,6 +742,19 @@ The screenshot shows significant wave height forecasts for a point in the South 
 
 ## 📋 Changelog
 
+### v1.0.4 — 2026-10-02
+**Combined GFS + WW3 file and misc. fixes**
+
+- **New:** combined `GFS_WW3_NOAA_YYYYMMDD_XXhs.grib2` file, built by concatenating GFS and WW3 GRIB2 outputs, so wind and waves show up together in a single XyGrib session
+- **New:** sanity check on the combined file (verifies it is larger than the GFS alone, catching silent `cat` failures)
+- **New:** final summary lists the combined file and warns if wave data was requested but no combined file was generated
+- Header comment for the combined file documents the verified behavior of `GribReader::storeRecordInMap` (records are always appended, no replacement)
+- Final summary check points to `$COMBINED_OUTPUT` instead of `$WAVE_OUTPUT`
+
+**Requirement:** to see swell data from WW3, XyGrib needs a fix for the `surfaceType1=241` encoding. See the [requirement section](#-requirement-swell-data-needs-a-patched-xygrib) below.
+
+---
+
 ### v1.0.3 — 2026-09-08
 **Critical bug fix and reliability improvements**
 
@@ -625,6 +818,7 @@ The screenshot shows significant wave height forecasts for a point in the South 
 - [OpenGribs issue #326 — GRIB server down](https://github.com/opengribs/XyGrib/issues/326)
 - [GFS 0.25° documentation](https://www.nco.ncep.noaa.gov/pmb/products/gfs/)
 - [WaveWatch III (WW3) documentation](https://polar.ncep.noaa.gov/waves/index2.shtml)
+- [XyGrib fork with the swell fix (`surfaceType1=241`)](https://github.com/DrCalambre/XyGrib/tree/fix-swell-241)
 
 ---
 

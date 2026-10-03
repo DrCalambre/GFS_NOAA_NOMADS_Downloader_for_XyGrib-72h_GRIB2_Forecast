@@ -9,7 +9,7 @@
 #/_______  /__|     \______  (____  /____(____  /__|_|  /___  /__|    \___  >
 #        \/                \/     \/          \/      \/    \/            \/ 
 # --------------------------------------------------------------------------------------------------------------------------------------
-# GFS NOAA NOMADS - v1.0.3 — 2026-09-08
+# GFS NOAA NOMADS - v1.0.4 — 2026-10-01
 # --------------------------------------------------------------------------------------------------------------------------------------
 # Descarga un pronóstico GFS de 0.25° directamente desde NOAA NOMADS
 # y construye un archivo GRIB2 compatible con XyGrib.
@@ -25,6 +25,7 @@
 #   - Validación del formato GRIB final
 #   - Salida de progreso clara y compacta
 #   - Descarga opcional de datos de olas (WW3) con detección inteligente de archivos disponibles
+#   - Archivo combinado GFS + WW3 para ver viento y olas en la misma sesión de XyGrib
 #
 # v1.0.3 — FIX: la lista de horas a descargar/concatenar se genera UNA sola vez
 #          (array HOURS) en vez de recalcularse con "HOUR+=STEP" en tres lugares
@@ -32,6 +33,24 @@
 #          y ese cambio "se filtraba" al bucle de reconstrucción del GRIB y al
 #          bucle de WW3, salteando silenciosamente archivos ya descargados cuando
 #          MAX_FORECAST > 240h.
+#
+# v1.0.4 — NEW: si DOWNLOAD_WAVES=true, se genera además un archivo combinado
+#          GFS+WW3 (COMBINED_OUTPUT) concatenando ambos GRIB2. XyGrib abre un
+#          solo archivo a la vez (verificado en MainWindow.cpp: resetea el
+#          estado al abrir un GRIB nuevo), así que sin esta fusión es imposible
+#          ver viento del GFS y olas del WW3 en la misma tabla/mapa.
+#
+#          GRIB2 es una secuencia de mensajes autocontenidos, por lo que la
+#          concatenación es válida. XyGrib indexa los registros por DataCode
+#          en un std::map<key, vector<shared_ptr<GribRecord>>> y SIEMPRE hace
+#          push_back al vector de esa clave (verificado línea por línea en
+#          GribReader::storeRecordInMap) — no hay reemplazo ni "el primero
+#          gana": todos los registros con la misma clave se acumulan, y la
+#          selección por fecha/hora ocurre después, en otro punto del código
+#          que no verificamos. Hoy esto es irrelevante porque las claves de
+#          GFS (viento, temp, presión, CAPE, isoterma) y WW3 (olas, swell,
+#          período) son completamente distintas — no hay ninguna clave
+#          compartida entre ambos archivos.
 # ============================================================
 
 set -u
@@ -104,8 +123,8 @@ EXPECTED_FILES=${#HOURS[@]}
 # Por defecto cubre Sudamérica hasta el norte de Argentina.
 # Los valores negativos indican Oeste (longitud) y Sur (latitud).
 WEST="-90"    # Límite oeste (longitud) - Océano Pacífico
-EAST="-30"    # Límite este (longitud) - Océano Atlántico
-NORTH="-20"   # Límite norte (latitud) - Norte de Argentina
+EAST="-50"    # Límite este (longitud) - Océano Atlántico
+NORTH="-38"   # Límite norte (latitud) - Inicio de la Patagonia argentina
 SOUTH="-60"   # Límite sur (latitud) - Cabo de Hornos
 
 # ------------------------------------------------------------
@@ -133,6 +152,9 @@ XYGRIB_DIR="${HOME}/.xygrib/grib"
 # Se usará la fecha real de descarga (DATE) para identificar cuándo se generó
 OUTPUT="${XYGRIB_DIR}/GFS_NOAA_${DATE}_${MAX_FORECAST}hs.grib2"
 WAVE_OUTPUT="${XYGRIB_DIR}/WW3_NOAA_${DATE}_${MAX_FORECAST}hs.grib2"
+
+# v1.0.4 — Archivo combinado (GFS + WW3), generado solo si DOWNLOAD_WAVES=true
+COMBINED_OUTPUT="${XYGRIB_DIR}/GFS_WW3_NOAA_${DATE}_${MAX_FORECAST}hs.grib2"
 
 # Pausa entre solicitudes (segundos) para no sobrecargar el servidor NOAA
 # NOAA recomienda espaciar las solicitudes automatizadas
@@ -342,10 +364,11 @@ fi
 # Mostrar cabecera informativa
 echo
 echo "============================================================"
-echo " GFS NOAA NOMADS - v1.0.3"
+echo " GFS NOAA NOMADS - v1.0.4"
 echo " ${MAX_FORECAST}-hour forecast for XyGrib"
 if [ "$DOWNLOAD_WAVES" = true ]; then
     echo " + Wave data (WW3) with intelligent file detection"
+    echo " + Combined GFS+WW3 file for a single XyGrib session"
 fi
 echo "============================================================"
 echo
@@ -384,6 +407,7 @@ echo "Region         : ${WEST}°W to ${EAST}°W / ${SOUTH}°S to ${NORTH}°N"
 echo "GFS output     : ${OUTPUT}"
 if [ "$DOWNLOAD_WAVES" = true ]; then
     echo "Wave output    : ${WAVE_OUTPUT}"
+    echo "Combined output: ${COMBINED_OUTPUT}"
 fi
 echo "Temp dir       : ${WORKDIR}"
 echo
@@ -620,6 +644,25 @@ if [ "$DOWNLOAD_WAVES" = true ]; then
                         echo "⚠️  Warning: File may not be a valid GRIB format."
                     fi
                 fi
+
+                # --- v1.0.4: Combinado GFS + WW3 para una sola sesión de XyGrib ---
+                # Orden deliberado: GFS primero, WW3 después. Aunque storeRecordInMap
+                # siempre hace push_back (nunca reemplaza, ver comentario de cabecera),
+                # mantener un orden fijo documenta la intención y facilita depurar si
+                # en el futuro aparece una clave compartida entre ambos archivos.
+                cat "$OUTPUT" "$WAVE_OUTPUT" > "$COMBINED_OUTPUT"
+
+                # v1.0.4: verificación barata de que el combinado efectivamente
+                # incluye el WW3 (debe pesar más que el GFS solo).
+                GFS_SIZE=$(stat -c%s "$OUTPUT" 2>/dev/null || stat -f%z "$OUTPUT")
+                COMB_SIZE=$(stat -c%s "$COMBINED_OUTPUT" 2>/dev/null || stat -f%z "$COMBINED_OUTPUT")
+                if [ "$COMB_SIZE" -gt "$GFS_SIZE" ]; then
+                    echo "✅ Combined GRIB (GFS + WW3) created:"
+                    ls -lh "$COMBINED_OUTPUT"
+                else
+                    echo "⚠️  Warning: Combined GRIB size (${COMB_SIZE}) is not larger than GFS alone (${GFS_SIZE})."
+                    echo "   The WW3 records may not have been concatenated correctly."
+                fi
             else
                 echo "❌ ERROR: Final Wave GRIB is empty."
             fi
@@ -646,15 +689,21 @@ echo "✅ Temporary files removed."
 
 echo
 echo "============================================================"
-echo " v1.0.3 COMPLETED"
+echo " v1.0.4 COMPLETED"
 echo "============================================================"
 echo
 echo "GFS file:"
 echo "  $OUTPUT"
-if [ "$DOWNLOAD_WAVES" = true ] && [ -s "$WAVE_OUTPUT" ]; then
+if [ "$DOWNLOAD_WAVES" = true ] && [ -s "$COMBINED_OUTPUT" ]; then
     echo
     echo "Wave file (WW3):"
     echo "  $WAVE_OUTPUT"
+    echo
+    echo "Combined file (GFS + WW3, recommended for XyGrib):"
+    echo "  $COMBINED_OUTPUT"
+elif [ "$DOWNLOAD_WAVES" = true ]; then
+    echo
+    echo "⚠️  Wave data requested but not downloaded — combined file was not generated."
 fi
 echo
 echo "You can now open them in XyGrib:"
