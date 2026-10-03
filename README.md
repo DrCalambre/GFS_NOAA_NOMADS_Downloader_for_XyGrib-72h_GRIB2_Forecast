@@ -326,7 +326,7 @@ This file is built by appending the WW3 GRIB2 after the GFS GRIB2. Since GRIB2 i
 
 **Recommended for XyGrib**: open the combined file instead of the two separate ones.
 
-### ⚠️ Requirement: swell data needs a patched XyGrib
+### Requirement: swell data needs a patched XyGrib
 
 The NOAA WW3 swell partitions (`shts`, `mpts`, `swdir`) are encoded with `surfaceType1=241` ("Ordered Sequence of Data"), which **the current XyGrib codebase does not recognize**. Without a fix, XyGrib loads the combined file but **swell height, period and direction will not display** — only wind waves and primary waves will.
 
@@ -573,7 +573,7 @@ tail -f /home/your_user/xygrib-forecast.log
 
 ### Swell data doesn't show up in the combined file
 
-- XyGrib must be patched to recognize `surfaceType1=241` used by NOAA for swell partitions. See the [requirement section](#-requirement-swell-data-needs-a-patched-xygrib) above.
+- XyGrib must be patched to recognize `surfaceType1=241` used by NOAA for swell partitions. See the [requirement section](#requirement-swell-data-needs-a-patched-xygrib) above.
 - Without the patch, wind waves and primary waves still display correctly — only swell is affected.
 - The GFS file opens fine on its own; the issue is specific to swell records inside the combined file.
 
@@ -640,7 +640,7 @@ A more comprehensive downloader that covers:
 
 A more ambitious effort: a fork of **XyGrib itself** (the viewer, not a downloader script), aiming to let XyGrib download directly from GRIB service providers instead of relying on an intermediary server like OpenGribs. This is a much deeper undertaking than any downloader script — it touches XyGrib's own codebase.
 
-**Note:** this script's combined GFS+WW3 file depends on a fix that is **not yet merged into frfa's fork**. The fix lives in `DrCalambre/XyGrib`, branch `fix-swell-241` — see the [requirement section](#-requirement-swell-data-needs-a-patched-xygrib) above. Once merged upstream, no fork will be needed.
+**Note:** this script's combined GFS+WW3 file depends on a fix that is **not yet merged into frfa's fork**. The fix lives in `DrCalambre/XyGrib`, branch `fix-swell-241` — see the [requirement section](#requirement-swell-data-needs-a-patched-xygrib) above. Once merged upstream, no fork will be needed.
 
 ### 🔧 GFS-NOAA-NOMADS-Downloader — POSIX/CLI fork by @frfa
 
@@ -751,7 +751,7 @@ The screenshot shows significant wave height forecasts for a point in the South 
 - Header comment for the combined file documents the verified behavior of `GribReader::storeRecordInMap` (records are always appended, no replacement)
 - Final summary check points to `$COMBINED_OUTPUT` instead of `$WAVE_OUTPUT`
 
-**Requirement:** to see swell data from WW3, XyGrib needs a fix for the `surfaceType1=241` encoding. See the [requirement section](#-requirement-swell-data-needs-a-patched-xygrib) below.
+**Requirement:** to see swell data from WW3, XyGrib needs a fix for the `surfaceType1=241` encoding. See the [requirement section](#requirement-swell-data-needs-a-patched-xygrib) below.
 
 ---
 
