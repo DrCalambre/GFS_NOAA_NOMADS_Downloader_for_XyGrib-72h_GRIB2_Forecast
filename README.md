@@ -356,7 +356,7 @@ The `fix-swell-241` branch includes two commits:
 
 Then open the combined `GFS_WW3_NOAA_*.grib2` file in XyGrib and enable the swell layers from the menu (they are not displayed automatically).
 
-For the full technical discussion — the `grib_ls` evidence, why the fix is scoped to `discipline==10`, and the side-by-side verification against GFS — see [issue #326](https://github.com/opengribs/XyGrib/issues/326).
+For the full technical discussion — the `grib_ls` evidence, why the fix is scoped to `discipline==10`, and the side-by-side verification against GFS — see [issue #326](https://github.com/opengribs/XyGrib/issues/326#issuecomment-5920495499).
 
 ---
 
