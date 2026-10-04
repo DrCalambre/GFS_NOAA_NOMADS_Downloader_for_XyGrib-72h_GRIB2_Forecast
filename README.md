@@ -343,7 +343,20 @@ git checkout fix-swell-241
 mkdir build && cd build && cmake .. && make -j$(nproc)
 ```
 
-For the full technical discussion (diagnosis, `grib_ls` evidence, why the fix is scoped to `discipline==10`, verification against GFS), see [issue #326](https://github.com/opengribs/XyGrib/issues/326).
+Once the build finishes, the binary is at `build/src/XyGrib`. Run it from the terminal:
+
+```bash
+./src/XyGrib
+```
+
+The `fix-swell-241` branch includes two commits:
+
+- `fix: add missing aecunpack.c and update g2clib CMakeLists` — a build fix required to compile the fork from a clean clone.
+- `fix: accept NOAA WW3 swell partitions (surfaceType1=241)` — the swell fix itself.
+
+Then open the combined `GFS_WW3_NOAA_*.grib2` file in XyGrib and enable the swell layers from the menu (they are not displayed automatically).
+
+For the full technical discussion — the `grib_ls` evidence, why the fix is scoped to `discipline==10`, and the side-by-side verification against GFS — see [issue #326](https://github.com/opengribs/XyGrib/issues/326).
 
 ---
 
