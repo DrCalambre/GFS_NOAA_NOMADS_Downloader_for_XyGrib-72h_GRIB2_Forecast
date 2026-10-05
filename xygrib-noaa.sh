@@ -9,7 +9,7 @@
 #/_______  /__|     \______  (____  /____(____  /__|_|  /___  /__|    \___  >
 #        \/                \/     \/          \/      \/    \/            \/ 
 # --------------------------------------------------------------------------------------------------------------------------------------
-# GFS NOAA NOMADS - v1.0.5 — 2026-10-04
+# GFS NOAA NOMADS - v1.0.5 — 2026-10-05
 # --------------------------------------------------------------------------------------------------------------------------------------
 # Descarga un pronóstico GFS de 0.25° directamente desde NOAA NOMADS
 # y construye un archivo GRIB2 compatible con XyGrib.
@@ -364,7 +364,7 @@ fi
 # Mostrar cabecera informativa
 echo
 echo "============================================================"
-echo " GFS NOAA NOMADS - V1.0.5"
+echo " GFS NOAA NOMADS - v1.0.5"
 echo " ${MAX_FORECAST}-hour forecast for XyGrib"
 if [ "$DOWNLOAD_WAVES" = true ]; then
     echo " + Wave data (WW3) with intelligent file detection"
