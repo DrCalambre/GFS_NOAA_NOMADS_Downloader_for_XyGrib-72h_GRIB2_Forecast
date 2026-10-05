@@ -97,104 +97,73 @@ chmod +x xygrib-noaa.sh
 
 ```text
 ============================================================
- GFS NOAA NOMADS - v1.0.4
+ GFS NOAA NOMADS - V1.0.5
  72-hour forecast for XyGrib
  + Wave data (WW3) with intelligent file detection
  + Combined GFS+WW3 file for a single XyGrib session
 ============================================================
 
 🔍 Detecting available GFS cycle...
-  Probando fecha 20261003...
+  Probando fecha 20261005...
   Probando ciclo 18Z...
   Probando ciclo 12Z...
   Probando ciclo 06Z...
-  Probando ciclo 00Z...
-  Probando fecha 20261002...
-  Probando ciclo 18Z...
-ℹ️  NOTE: Using GFS data from 20261002 (current date 20261003 has no cycles available yet).
-   This is normal when running the script early in the day (00:00-04:00 UTC).
-✅ Using GFS cycle: 18Z (date: 20261002)
+✅ Using GFS cycle: 06Z (date: 20261005)
 
-Date (current) : 20261003
-Date (used)    : 20261002
-GFS Cycle      : 18Z
+Date (current) : 20261005
+Date (used)    : 20261005
+GFS Cycle      : 06Z
 Horizon        : f000 → f72
 Interval       : 3h (12h beyond 240h)
 Time steps     : 25
 Region         : -90°W to -50°W / -60°S to -38°N
-GFS output     : /home/antix1/.xygrib/grib/GFS_NOAA_20261003_72hs.grib2
-Wave output    : /home/antix1/.xygrib/grib/WW3_NOAA_20261003_72hs.grib2
-Combined output: /home/antix1/.xygrib/grib/GFS_WW3_NOAA_20261003_72hs.grib2
-Temp dir       : /tmp/gfs-20261003-17935
+GFS output     : /home/antix1/.xygrib/grib/GFS_NOAA_20261005_06Z_72hs.grib2
+Wave output    : /home/antix1/.xygrib/grib/WW3_NOAA_20261005_06Z_72hs.grib2
+Combined output: /home/antix1/.xygrib/grib/GFS_WW3_NOAA_20261005_06Z_72hs.grib2
+Temp dir       : /tmp/gfs-20261005-9609
 
 ============================================================
  DOWNLOADING GFS (weather)
 ============================================================
 
-[01/25] F000 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[02/25] F003 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[03/25] F006 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[04/25] F009 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[05/25] F012 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[06/25] F015 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[07/25] F018 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[08/25] F021 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[09/25] F024 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[10/25] F027 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[11/25] F030 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[12/25] F033 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[13/25] F036 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[14/25] F039 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[15/25] F042 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[16/25] F045 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[17/25] F048 →   ✅ 18Z
- ✅ 1,4M [18Z]
-[18/25] F051 →   ✅ 18Z
- ✅ 1,3M [18Z]
-[19/25] F054 →   ✅ 18Z
- ✅ 1,3M [18Z]
-[20/25] F057 →   ✅ 18Z
- ✅ 1,3M [18Z]
-[21/25] F060 →   ✅ 18Z
- ✅ 1,3M [18Z]
-[22/25] F063 →   ✅ 18Z
- ✅ 1,3M [18Z]
-[23/25] F066 →   ✅ 18Z
- ✅ 1,3M [18Z]
-[24/25] F069 →   ✅ 18Z
- ✅ 1,3M [18Z]
-[25/25] F072 →   ✅ 18Z
- ✅ 1,3M [18Z]
+[01/25] F000 → ✅ 1,3M [06Z]
+[02/25] F003 → ✅ 1,3M [06Z]
+[03/25] F006 → ✅ 1,4M [06Z]
+[04/25] F009 → ✅ 1,4M [06Z]
+[05/25] F012 → ✅ 1,4M [06Z]
+[06/25] F015 → ✅ 1,4M [06Z]
+[07/25] F018 → ✅ 1,4M [06Z]
+[08/25] F021 → ✅ 1,4M [06Z]
+[09/25] F024 → ✅ 1,4M [06Z]
+[10/25] F027 → ✅ 1,4M [06Z]
+[11/25] F030 → ✅ 1,3M [06Z]
+[12/25] F033 → ✅ 1,3M [06Z]
+[13/25] F036 → ✅ 1,3M [06Z]
+[14/25] F039 → ✅ 1,3M [06Z]
+[15/25] F042 → ✅ 1,3M [06Z]
+[16/25] F045 → ✅ 1,4M [06Z]
+[17/25] F048 → ✅ 1,4M [06Z]
+[18/25] F051 → ✅ 1,4M [06Z]
+[19/25] F054 → ✅ 1,4M [06Z]
+[20/25] F057 → ✅ 1,4M [06Z]
+[21/25] F060 → ✅ 1,4M [06Z]
+[22/25] F063 → ✅ 1,4M [06Z]
+[23/25] F066 → ✅ 1,4M [06Z]
+[24/25] F069 → ✅ 1,4M [06Z]
+[25/25] F072 → ✅ 1,4M [06Z]
 
 ============================================================
  GFS RESULTS
 ============================================================
 
 ✅ Successful       : 25
-🔄 Fallback used    : 0
 ❌ Failed           : 0
 📊 Total            : 25
 
 Building final GFS GRIB2...
 
 ✅ Final GFS GRIB created:
--rw-rw-r-- 1 antix1 antix1 34M oct  2 21:23 /home/antix1/.xygrib/grib/GFS_NOAA_20261003_72hs.grib2
+-rw-rw-r-- 1 antix1 antix1 34M oct  5 08:54 /home/antix1/.xygrib/grib/GFS_NOAA_20261005_06Z_72hs.grib2
 ✅ File validation: GRIB format confirmed.
 
 ============================================================
@@ -202,34 +171,33 @@ Building final GFS GRIB2...
 ============================================================
 
 🔍 Detecting available WW3 cycle...
-ℹ️  NOTE: Using WW3 data from 20261002 (current date 20261003 has no cycles available yet).
-✅ Using WW3 cycle: 18Z (date: 20261002)
+✅ Using WW3 cycle: 06Z (date: 20261005)
 
-[01] WAVE F000 →  ✅ 308K
-[02] WAVE F003 →  ✅ 312K
-[03] WAVE F006 →  ✅ 312K
-[04] WAVE F009 →  ✅ 308K
-[05] WAVE F012 →  ✅ 308K
-[06] WAVE F015 →  ✅ 308K
-[07] WAVE F018 →  ✅ 308K
-[08] WAVE F021 →  ✅ 312K
-[09] WAVE F024 →  ✅ 312K
-[10] WAVE F027 →  ✅ 316K
-[11] WAVE F030 →  ✅ 316K
-[12] WAVE F033 →  ✅ 316K
-[13] WAVE F036 →  ✅ 320K
-[14] WAVE F039 →  ✅ 324K
-[15] WAVE F042 →  ✅ 324K
+[01] WAVE F000 →  ✅ 336K
+[02] WAVE F003 →  ✅ 340K
+[03] WAVE F006 →  ✅ 340K
+[04] WAVE F009 →  ✅ 344K
+[05] WAVE F012 →  ✅ 340K
+[06] WAVE F015 →  ✅ 340K
+[07] WAVE F018 →  ✅ 336K
+[08] WAVE F021 →  ✅ 336K
+[09] WAVE F024 →  ✅ 340K
+[10] WAVE F027 →  ✅ 340K
+[11] WAVE F030 →  ✅ 340K
+[12] WAVE F033 →  ✅ 340K
+[13] WAVE F036 →  ✅ 336K
+[14] WAVE F039 →  ✅ 336K
+[15] WAVE F042 →  ✅ 332K
 [16] WAVE F045 →  ✅ 328K
 [17] WAVE F048 →  ✅ 328K
-[18] WAVE F051 →  ✅ 332K
-[19] WAVE F054 →  ✅ 336K
-[20] WAVE F057 →  ✅ 340K
-[21] WAVE F060 →  ✅ 340K
-[22] WAVE F063 →  ✅ 340K
-[23] WAVE F066 →  ✅ 344K
-[24] WAVE F069 →  ✅ 344K
-[25] WAVE F072 →  ✅ 340K
+[18] WAVE F051 →  ✅ 328K
+[19] WAVE F054 →  ✅ 332K
+[20] WAVE F057 →  ✅ 332K
+[21] WAVE F060 →  ✅ 336K
+[22] WAVE F063 →  ✅ 336K
+[23] WAVE F066 →  ✅ 336K
+[24] WAVE F069 →  ✅ 332K
+[25] WAVE F072 →  ✅ 332K
 
 ============================================================
  WAVE RESULTS
@@ -242,25 +210,25 @@ Building final GFS GRIB2...
 Building final Wave GRIB2...
 
 ✅ Final Wave GRIB created:
--rw-rw-r-- 1 antix1 antix1 7,9M oct  2 21:30 /home/antix1/.xygrib/grib/WW3_NOAA_20261003_72hs.grib2
+-rw-rw-r-- 1 antix1 antix1 8,2M oct  5 08:59 /home/antix1/.xygrib/grib/WW3_NOAA_20261005_06Z_72hs.grib2
 ✅ File validation: GRIB format confirmed.
 ✅ Combined GRIB (GFS + WW3) created:
--rw-rw-r-- 1 antix1 antix1 41M oct  2 21:30 /home/antix1/.xygrib/grib/GFS_WW3_NOAA_20261003_72hs.grib2
+-rw-rw-r-- 1 antix1 antix1 42M oct  5 08:59 /home/antix1/.xygrib/grib/GFS_WW3_NOAA_20261005_06Z_72hs.grib2
 🧹 Cleaning temporary files...
 ✅ Temporary files removed.
 
 ============================================================
- v1.0.4 COMPLETED
+ v1.0.5 COMPLETED
 ============================================================
 
 GFS file:
-  /home/antix1/.xygrib/grib/GFS_NOAA_20261003_72hs.grib2
+  /home/antix1/.xygrib/grib/GFS_NOAA_20261005_06Z_72hs.grib2
 
 Wave file (WW3):
-  /home/antix1/.xygrib/grib/WW3_NOAA_20261003_72hs.grib2
+  /home/antix1/.xygrib/grib/WW3_NOAA_20261005_06Z_72hs.grib2
 
 Combined file (GFS + WW3, recommended for XyGrib):
-  /home/antix1/.xygrib/grib/GFS_WW3_NOAA_20261003_72hs.grib2
+  /home/antix1/.xygrib/grib/GFS_WW3_NOAA_20261005_06Z_72hs.grib2
 
 You can now open them in XyGrib:
   File → Open GRIB...
