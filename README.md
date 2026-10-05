@@ -5,7 +5,7 @@
 
 > **Direct download from NOAA/NOMADS of a GRIB2 forecast, ready for XyGrib.**  
 > Eliminates dependency on the OpenGribs intermediary server.  
-> **Now with optional wave data (WW3) and a combined GFS+WW3 file for a single XyGrib session.** 🌊
+> **Now with optional wave data (WW3), a combined GFS+WW3 file, and atomic single-cycle downloads.** 🌊
 
 ---
 
@@ -30,19 +30,20 @@ This script **downloads directly from the official source (NOAA NOMADS)** and bu
 | Feature | Detail |
 |---|---|
 | **Model** | GFS 0.25° (NOAA/NCEP) |
-| **Cycle** | **Automatic detection** (18Z → 12Z → 06Z → 00Z) with smart fallback |
+| **Cycle** | **Automatic detection** (18Z → 12Z → 06Z → 00Z) with full-horizon validation |
 | **Horizon** | 0 – 384 hours (configurable, default 72h / 3 days) |
 | **Interval** | 3 hours (0-240h) / 12 hours (240-384h) |
 | **Region** | `-90°W` to `-50°W` / `-60°S` to `-38°N`<br>(South America and surrounding waters) *configurable* |
 | **Variables** | Temperature, wind, gusts, pressure, humidity, cloud cover, precipitation, snow, CAPE, **0°C isotherm**, freezing rain, etc. |
-| **Output** | Single GRIB2 in `~/.xygrib/grib/GFS_NOAA_YYYYMMDD_XXhs.grib2` |
+| **Output** | Single GRIB2 in `~/.xygrib/grib/GFS_NOAA_YYYYMMDD_CYCLEz_XXhs.grib2` |
 | **Temporaries** | Stored in `/tmp/gfs-...` and **automatically cleaned up** after execution |
 | **Validation** | Automatic GRIB format check using `file` command |
-| **Error handling** | Smart retry with fallback cycles on 404 errors |
+| **Error handling** | 3 retries per file against the same cycle; abort if too many fail |
 | **Fallback date** | Automatic retry with previous days if no cycles available |
 | **Progress** | Compact output with per-file status (`[01/25] F000 → ✅ 12Z`) |
 | **🌊 Wave data (WW3)** | **Optional** — height, direction, period, with intelligent file detection |
 | **🌊 Combined file** | **New in v1.0.4** — GFS + WW3 concatenated into one GRIB2, so wind and waves appear in the same XyGrib session |
+| **🔒 Cycle integrity** | **New in v1.0.5** — downloads are bound to one cycle; GFS+WW3 combined only if both match |
 
 ---
 
@@ -84,12 +85,13 @@ chmod +x xygrib-noaa.sh
 
 1. Downloads **filtered GRIB files** from NOAA NOMADS (number depends on `MAX_FORECAST`).
    - Default: 25 files for 72h (3 days) at 3-hour intervals.
-2. Waits **8 seconds** between requests (respecting NOAA's recommendation).
-3. Concatenates the files into a **single GRIB2**.
-4. Saves it to `~/.xygrib/grib/GFS_NOAA_YYYYMMDD_XXhs.grib2`.
-5. Optionally, downloads wave data (WW3) from NOAA NOMADS, saving it as `WW3_NOAA_YYYYMMDD_XXhs.grib2`.
-6. Optionally, if `DOWNLOAD_WAVES=true`, builds a combined `GFS_WW3_NOAA_YYYYMMDD_XXhs.grib2` file so wind and waves appear together in a single XyGrib session.
-7. Displays size and location information.
+2. **Validates the full horizon before starting**: a cycle is only accepted if both `f000` and `f${MAX_FORECAST}` exist on NOMADS. A partially published cycle is skipped entirely.
+3. Waits **8 seconds** between requests (respecting NOAA's recommendation).
+4. Concatenates the files into a **single GRIB2**.
+5. Saves it to `~/.xygrib/grib/GFS_NOAA_YYYYMMDD_CYCLEz_XXhs.grib2`.
+6. Optionally, downloads wave data (WW3) from NOAA NOMADS, saving it as `WW3_NOAA_YYYYMMDD_CYCLEz_XXhs.grib2`.
+7. Optionally, if `DOWNLOAD_WAVES=true`, builds a combined `GFS_WW3_NOAA_YYYYMMDD_CYCLEz_XXhs.grib2` file — **but only if the GFS and WW3 cycles match exactly**. Otherwise, the combined file is skipped with an explicit warning.
+8. Displays size and location information.
 
 ### Example output
 
@@ -310,17 +312,19 @@ DOWNLOAD_WAVES=true   # or false
 
 - The wave data is saved as a separate GRIB2 file:
   ```
-  ~/.xygrib/grib/WW3_NOAA_YYYYMMDD_XXhs.grib2
+  ~/.xygrib/grib/WW3_NOAA_YYYYMMDD_CYCLEz_XXhs.grib2
   ```
 - You can open it in XyGrib together with the GFS file to overlay weather and wave information.
 
-### 🔗 Combined GFS + WW3 file (v1.0.4)
+### 🔗 Combined GFS + WW3 file (v1.0.4, refined in v1.0.5)
 
 XyGrib can only open **one GRIB file at a time** — opening a second one replaces the first. To see wind (from GFS) and waves (from WW3) together in the same table and map, the script now produces a third file that concatenates both:
 
 ```text
-~/.xygrib/grib/GFS_WW3_NOAA_YYYYMMDD_XXhs.grib2
+~/.xygrib/grib/GFS_WW3_NOAA_YYYYMMDD_CYCLEz_XXhs.grib2
 ```
+
+**Important (v1.0.5):** the combined file is generated **only if GFS and WW3 resolve to the same cycle and date**. If they don't — for example because WW3 is published later than GFS on NOMADS — the combined file is **not** created and an explicit warning is printed. This prevents silently mixing wind and wave fields from different reference times.
 
 This file is built by appending the WW3 GRIB2 after the GFS GRIB2. Since GRIB2 is a sequence of self-contained messages, XyGrib reads both seamlessly — GFS records (wind, temperature, pressure) and WW3 records (swell, wind waves, primary waves) live under different keys internally, so there is no collision.
 
@@ -474,9 +478,9 @@ The script was tested on **XyGrib 1.2.6 / antiX Linux 26** with the following ve
 
 ```text
 ~/.xygrib/grib/
-├── GFS_NOAA_YYYYMMDD_XXhs.grib2
-├── WW3_NOAA_YYYYMMDD_XXhs.grib2        (if DOWNLOAD_WAVES=true)
-└── GFS_WW3_NOAA_YYYYMMDD_XXhs.grib2    (if DOWNLOAD_WAVES=true)
+├── GFS_NOAA_YYYYMMDD_CYCLEz_XXhs.grib2
+├── WW3_NOAA_YYYYMMDD_CYCLEz_XXhs.grib2        (if DOWNLOAD_WAVES=true)
+└── GFS_WW3_NOAA_YYYYMMDD_CYCLEz_XXhs.grib2    (if DOWNLOAD_WAVES=true)
 ```
 
 ---
@@ -754,6 +758,38 @@ The screenshot shows significant wave height forecasts for a point in the South 
 ---
 
 ## 📋 Changelog
+
+### v1.0.5 — 2026-10-04
+**Atomic cycle downloads, full-horizon validation, strict GFS+WW3 sync**
+
+**⚠️ Breaking change — filename format.** Final outputs now include the **real run cycle and date** instead of the download date:
+```
+Before:  GFS_NOAA_20261004_72hs.grib2
+After:   GFS_NOAA_20261004_18Z_72hs.grib2
+```
+Two practical consequences: a run at 00:30 UTC no longer labels yesterday's 18Z data with today's date; two runs the same UTC day no longer overwrite each other. Scripts matching `GFS_NOAA_*.grib2` by pattern still work — the extra `_18Z` segment is inside the pattern.
+
+**Correctness fixes:**
+- **No cross-cycle fallback.** Previously, if a forecast step failed on the primary cycle, the script fetched it from an alternate cycle and concatenated it as if it were the same step — silently corrupting the temporal series in XyGrib. Now downloads are strictly bound to the selected cycle. On failure, 3 retries against the same cycle; the file is discarded and the `FAILED > 5` threshold decides whether to abort.
+- **Full-horizon validation.** A cycle is only accepted when **both** `f000` and `f${MAX_FORECAST}` exist on NOMADS. Prevents selecting a partially published cycle, which previously caused mid-download aborts during the publication windows.
+- **Strict GFS+WW3 sync.** The combined file is generated only when both GFS and WW3 resolve to the same cycle and date. Otherwise the combined file is skipped with an explicit warning.
+- **Preventive cleanup of stale outputs.** `WAVE_OUTPUT` and `COMBINED_OUTPUT` are removed at the start of the wave block, so a failed wave run cannot leave a stale combined file from a previous session being reported as current.
+
+**Robustness:**
+- **`trap cleanup EXIT INT TERM`.** Ctrl+C, `SIGTERM`, or any early exit now removes the temporary directories under `/tmp`.
+- **Explicit 404 handling in WW3.** `download_wave_data()` returns `44` for a 404 (end of horizon), and `1` for any other failure — the partial file is removed immediately in both cases.
+- **Single HTTP request per wave step.** `check_wave_file_exists()` was removed; the 404 detection inside `download_wave_data()` covers the same case with one request.
+
+**Cosmetic:**
+- Progress output unified to a single line per file.
+- `FALLBACK_USED` counter removed.
+- The last file of each loop no longer sleeps before finishing.
+
+---
+
+```
+
+---
 
 ### v1.0.4 — 2026-10-02
 **Combined GFS + WW3 file and misc. fixes**
