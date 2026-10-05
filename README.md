@@ -759,14 +759,17 @@ The screenshot shows significant wave height forecasts for a point in the South 
 
 ## 📋 Changelog
 
+```
+---
+
 ### v1.0.5 — 2026-10-04
 **Atomic cycle downloads, full-horizon validation, strict GFS+WW3 sync**
 
 **⚠️ Breaking change — filename format.** Final outputs now include the **real run cycle and date** instead of the download date:
-```
+`
 Before:  GFS_NOAA_20261004_72hs.grib2
 After:   GFS_NOAA_20261004_18Z_72hs.grib2
-```
+`
 Two practical consequences: a run at 00:30 UTC no longer labels yesterday's 18Z data with today's date; two runs the same UTC day no longer overwrite each other. Scripts matching `GFS_NOAA_*.grib2` by pattern still work — the extra `_18Z` segment is inside the pattern.
 
 **Correctness fixes:**
@@ -784,10 +787,6 @@ Two practical consequences: a run at 00:30 UTC no longer labels yesterday's 18Z 
 - Progress output unified to a single line per file.
 - `FALLBACK_USED` counter removed.
 - The last file of each loop no longer sleeps before finishing.
-
----
-
-```
 
 ---
 
