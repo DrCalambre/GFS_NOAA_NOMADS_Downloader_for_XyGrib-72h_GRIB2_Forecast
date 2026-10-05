@@ -759,9 +759,6 @@ The screenshot shows significant wave height forecasts for a point in the South 
 
 ## 📋 Changelog
 
-```
----
-
 ### v1.0.5 — 2026-10-04
 **Atomic cycle downloads, full-horizon validation, strict GFS+WW3 sync**
 
@@ -787,6 +784,10 @@ Two practical consequences: a run at 00:30 UTC no longer labels yesterday's 18Z 
 - Progress output unified to a single line per file.
 - `FALLBACK_USED` counter removed.
 - The last file of each loop no longer sleeps before finishing.
+
+---
+
+```
 
 ---
 
