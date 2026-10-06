@@ -844,6 +844,16 @@ Developed from tests conducted with **XyGrib 1.2.6** on **antiX Linux 26**.
 Thanks to the XyGrib community and NOAA/NCEP for keeping the data open.
 
 ---
+
+## ☕ Support this project
+
+This script exists because OpenGribs went down and sailors needed a way to keep getting GRIB forecasts. If it's helping you plan your time on the water, consider buying me a coffee. Your gesture keeps me motivated to keep maintaining it.
+
+☕ Invite me a coffee :)
+
+[![Invitame un café en cafecito.app](https://cdn.cafecito.app/imgs/buttons/button_1.svg)](https://cafecito.app/drcalambre)
+
+---
 ## 📸 Why this project exists
 
 "Piedra del Fraile" 🏔️❄️🇦🇷
