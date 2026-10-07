@@ -845,9 +845,11 @@ Thanks to the XyGrib community and NOAA/NCEP for keeping the data open.
 
 ---
 
-## ☕ Support this project
+## ❤️ Support this project
 
-This script exists because OpenGribs went down and sailors needed a way to keep getting GRIB forecasts. If it's helping you plan your time on the water, consider buying me a coffee. Your gesture keeps me motivated to keep maintaining it.
+This script exists because OpenGribs went down and sailors needed a way to keep getting GRIB forecasts. If it's helping you plan your time on the water, consider supporting its development — through whichever option works best for you.
+
+[![Sponsor DrCalambre](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/DrCalambre)
 
 ☕ Invite me a coffee :)
 
