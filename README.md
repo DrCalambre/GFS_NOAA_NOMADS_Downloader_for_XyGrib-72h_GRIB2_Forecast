@@ -5,7 +5,7 @@
 
 > **Direct download from NOAA/NOMADS of a GRIB2 forecast, ready for XyGrib.**  
 > Eliminates dependency on the OpenGribs intermediary server.  
-> **Now with optional wave data (WW3), a combined GFS+WW3 file, and atomic single-cycle downloads.** 🌊
+> **Now with optional wave data (WW3), a combined GFS+WW3 file, atomic single-cycle downloads, and hardened HTTP/error handling.** 🌊
 
 ---
 
@@ -44,6 +44,7 @@ This script **downloads directly from the official source (NOAA NOMADS)** and bu
 | **🌊 Wave data (WW3)** | **Optional** — height, direction, period, with intelligent file detection |
 | **🌊 Combined file** | **New in v1.0.4** — GFS + WW3 concatenated into one GRIB2, so wind and waves appear in the same XyGrib session |
 | **🔒 Cycle integrity** | **New in v1.0.5** — downloads are bound to one cycle; GFS+WW3 combined only if both match |
+| **🛡️ Hardened requests** | **New in v1.0.6** — HTTP timeouts on cycle-detection probes; `cat` for the combined file verified with explicit failure handling; WW3 cycle fast-path reuses the GFS cycle when possible |
 
 ---
 
@@ -97,7 +98,7 @@ chmod +x xygrib-noaa.sh
 
 ```text
 ============================================================
- GFS NOAA NOMADS - V1.0.5
+ GFS NOAA NOMADS - v1.0.6
  72-hour forecast for XyGrib
  + Wave data (WW3) with intelligent file detection
  + Combined GFS+WW3 file for a single XyGrib session
@@ -218,7 +219,7 @@ Building final Wave GRIB2...
 ✅ Temporary files removed.
 
 ============================================================
- v1.0.5 COMPLETED
+ v1.0.6 COMPLETED
 ============================================================
 
 GFS file:
@@ -726,6 +727,22 @@ The screenshot shows significant wave height forecasts for a point in the South 
 ---
 
 ## 📋 Changelog
+
+### v1.0.6 — 2026-10-16
+**HTTP timeouts, verified concatenation, unified test helpers, WW3 fast-path**
+
+**Robustness:**
+- **Timeouts on cycle-detection probes.** `test_gfs_file()` and `test_wave_file()` now use `--connect-timeout 15 --max-time 30`. Without them, a slow NOMADS could previously hang the script indefinitely during cycle detection, before any real download began.
+- **Verified `cat` for the combined file.** The `cat "$OUTPUT" "$WAVE_OUTPUT" > "$COMBINED_OUTPUT"` now checks its exit status directly. A failure (e.g. disk full) removes the partial file, prints an explicit error, and exits — instead of relying solely on the size comparison, which could give a false positive on a truncated write.
+
+**Refactor:**
+- **`test_cycle` + `test_last_forecast` unified into `test_gfs_file(cycle, date, forecast)`.** `find_best_cycle()` computes `last_forecast` locally. No logic change: still validates both `f000` and `f${MAX_FORECAST}` per cycle.
+- **WW3 detection fast-path.** Before running the full retry across previous days, the script first tests the same cycle/date that GFS resolved to. In the common case this saves up to 23 HTTP probes; the full fallback (`find_best_wave_cycle_with_retry`) stays intact for the cases where they don't match.
+
+**Portability:**
+- Replaced `${HOURS[-1]}` (negative array indexing, Bash 4.3+) with `${#HOURS[@]}` in the WW3 loop, matching the GFS loop pattern and keeping the script portable to older Bash.
+
+---
 
 ### v1.0.5 — 2026-10-04
 **Atomic cycle downloads, full-horizon validation, strict GFS+WW3 sync**
