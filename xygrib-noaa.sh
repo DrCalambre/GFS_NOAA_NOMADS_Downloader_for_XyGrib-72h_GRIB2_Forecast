@@ -616,7 +616,7 @@ if [ "$DOWNLOAD_WAVES" = true ]; then
             fi
             
             # Pausa entre solicitudes (excepto después del último archivo)
-            if [ "$HOUR" -ne "${HOURS[-1]}" ]; then
+            if [ "$WAVE_TOTAL" -lt "${#HOURS[@]}" ]; then
                 sleep "$PAUSE"
             fi
         done
