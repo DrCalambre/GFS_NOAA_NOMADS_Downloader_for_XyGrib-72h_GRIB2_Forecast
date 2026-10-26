@@ -98,7 +98,7 @@ chmod +x xygrib-noaa.sh
 
 ```text
 ============================================================
- GFS NOAA NOMADS - v1.0.6
+ GFS NOAA NOMADS - v1.0.7
  72-hour forecast for XyGrib
  + Wave data (WW3) with intelligent file detection
  + Combined GFS+WW3 file for a single XyGrib session
@@ -219,7 +219,7 @@ Building final Wave GRIB2...
 ✅ Temporary files removed.
 
 ============================================================
- v1.0.6 COMPLETED
+ v1.0.7 COMPLETED
 ============================================================
 
 GFS file:
@@ -839,6 +839,14 @@ The screenshot shows significant wave height forecasts for a point in the South 
 ---
 
 ## 📋 Changelog
+
+### v1.0.7 — 2026-10-26
+**Region output with hemisphere letters**
+
+- **Fixed:** the `Region` line now shows absolute values with W/E and S/N (e.g. `90°W to 50°W / 60°S to 38°S`) instead of signed numbers. The region variables and downloads are unchanged.
+- **Docs:** added the Windows usage guide (Git Bash) with screenshots.
+
+---
 
 ### v1.0.6 — 2026-10-16
 **HTTP timeouts, verified concatenation, unified test helpers, WW3 fast-path**
