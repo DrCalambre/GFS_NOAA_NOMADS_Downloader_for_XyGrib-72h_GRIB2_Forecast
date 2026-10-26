@@ -419,7 +419,9 @@ echo "GFS Cycle      : ${BEST_CYCLE}Z"
 echo "Horizon        : f000 → f${MAX_FORECAST}"
 echo "Interval       : 3h (12h beyond 240h)"
 echo "Time steps     : ${EXPECTED_FILES}"
-echo "Region         : ${WEST}°W to ${EAST}°W / ${SOUTH}°S to ${NORTH}°N"
+fmt_lon() { case "$1" in -*) echo "${1#-}°W" ;; *) echo "${1}°E" ;; esac; }
+fmt_lat() { case "$1" in -*) echo "${1#-}°S" ;; *) echo "${1}°N" ;; esac; }
+echo "Region         : $(fmt_lon "$WEST") to $(fmt_lon "$EAST") / $(fmt_lat "$SOUTH") to $(fmt_lat "$NORTH")"
 echo "GFS output     : ${OUTPUT}"
 if [ "$DOWNLOAD_WAVES" = true ]; then
     echo "Wave output    : ${WAVE_OUTPUT}"

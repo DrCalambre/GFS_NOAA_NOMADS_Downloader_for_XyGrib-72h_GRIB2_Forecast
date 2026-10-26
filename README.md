@@ -33,7 +33,7 @@ This script **downloads directly from the official source (NOAA NOMADS)** and bu
 | **Cycle** | **Automatic detection** (18Z → 12Z → 06Z → 00Z) with full-horizon validation |
 | **Horizon** | 0 – 384 hours (configurable, default 72h / 3 days) |
 | **Interval** | 3 hours (0-240h) / 12 hours (240-384h) |
-| **Region** | `-90°W` to `-50°W` / `-60°S` to `-38°N`<br>(South America and surrounding waters) *configurable* |
+| **Region** | `90°W` to `50°W` / `60°S` to `38°S`<br>(South America and surrounding waters) *configurable* |
 | **Variables** | Temperature, wind, gusts, pressure, humidity, cloud cover, precipitation, snow, CAPE, **0°C isotherm**, freezing rain, etc. |
 | **Output** | Single GRIB2 in `~/.xygrib/grib/GFS_NOAA_YYYYMMDD_CYCLEz_XXhs.grib2` |
 | **Temporaries** | Stored in `/tmp/gfs-...` and **automatically cleaned up** after execution |
@@ -117,7 +117,7 @@ GFS Cycle      : 06Z
 Horizon        : f000 → f72
 Interval       : 3h (12h beyond 240h)
 Time steps     : 25
-Region         : -90°W to -50°W / -60°S to -38°N
+Region         : 90°W to 50°W / 60°S to 38°S
 GFS output     : /home/antix1/.xygrib/grib/GFS_NOAA_20261005_06Z_72hs.grib2
 Wave output    : /home/antix1/.xygrib/grib/WW3_NOAA_20261005_06Z_72hs.grib2
 Combined output: /home/antix1/.xygrib/grib/GFS_WW3_NOAA_20261005_06Z_72hs.grib2
