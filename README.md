@@ -239,6 +239,116 @@ You can now open them in XyGrib:
 
 ---
 
+## 🪟 Usage on Windows
+
+The script is written in Bash, so on Windows it runs under **Git Bash** (included with Git for Windows).
+
+### Requirements
+
+- [Git for Windows](https://git-scm.com/download/win)
+- The XyGrib Windows portable build with the swell fix: [v1.3.1-windows release](https://github.com/DrCalambre/XyGrib/releases/tag/v1.3.1-windows)
+- To build XyGrib from source on Windows, see [BUILD-WINDOWS.md](https://github.com/DrCalambre/XyGrib/blob/main/BUILD-WINDOWS.md)
+
+To confirm you are running the right build, open **Help → About** in XyGrib. The version shown should be 1.3.1 with the swell fix included.
+
+![XyGrib About dialog](screenshots/XyGrib-Windows-ScreenShots/win-14-xygrib-show-about.jpg)
+
+### Steps
+
+1. **Set Git to keep Unix line endings** (run once, before cloning):
+
+   ```bash
+   git config --global core.autocrlf input
+   ```
+
+2. **Clone the repository** (open Git Bash):
+
+   ```bash
+   cd ~
+   git clone https://github.com/DrCalambre/GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB2_Forecast
+   cd GFS_NOAA_NOMADS_Downloader_for_XyGrib-72h_GRIB2_Forecast
+   chmod +x xygrib-noaa.sh
+   ```
+
+   Check that the script has Unix line endings. The result must be `0`:
+
+   ```bash
+   grep -c $'\r' xygrib-noaa.sh
+   ```
+
+   If it is not `0`, run `sed -i 's/\r$//' xygrib-noaa.sh` and check again.
+
+3. **Check the required commands.** Every line must say `OK`:
+
+   ```bash
+   for c in curl date cat grep du cut stat ls rm mkdir sleep printf file; do
+     command -v $c >/dev/null && echo "OK     $c" || echo "MISSING $c"
+   done
+   ```
+
+   If any line says `MISSING`, reinstall Git for Windows.
+
+4. **Set the region.** Open the script with `nano xygrib-noaa.sh` and edit the region variables. For example, for the North Atlantic (from the Azores to the Norwegian Sea):
+
+   ```bash
+   WEST="-23.5"   # Longitude limit (west)
+   EAST="0"       # Longitude limit (east)
+   NORTH="62"     # Latitude limit (north)
+   SOUTH="35"     # Latitude limit (south)
+   ```
+
+   Longitudes west of Greenwich are negative and latitudes south of the equator are negative. Keep the double quotes and do not rename the variables. Optionally, change `MAX_FORECAST` (0 to 384 hours).
+
+5. **Run the script:**
+
+   ```bash
+   ./xygrib-noaa.sh
+   ```
+
+   The files are saved to `C:\Users\<your_user>\.xygrib\grib`. The folder name starts with a dot, so enable **Hidden items** in File Explorer. The run takes about 8 to 10 minutes because the script waits 8 seconds between requests. A `this libcurl is Debug-enabled` warning from curl can be ignored.
+
+6. **Open the result in XyGrib:** **File → Open GRIB** and select `GFS_WW3_NOAA_*.grib2` (the combined file with wind and waves). Swell layers must be enabled from the menu.
+
+### Screenshots
+
+**Step 2 — Clone the repository**
+
+![Cloning the script](screenshots/XyGrib-Windows-ScreenShots/win-01-clone-script.jpg)
+
+**Step 3 — Check the required commands**
+
+![Checking the required commands](screenshots/XyGrib-Windows-ScreenShots/win-02-test-tools.jpg)
+
+**Step 4 — Set the region**
+
+![Editing the region in nano](screenshots/XyGrib-Windows-ScreenShots/win-03-edit-nano.jpg)
+
+**Step 5 — Run the script**
+
+![Running the script in Git Bash](screenshots/XyGrib-Windows-ScreenShots/win-04-run-script.jpg)
+
+![Output folder with the GRIB files](screenshots/XyGrib-Windows-ScreenShots/win-05-path-to-gribs.jpg)
+
+**Step 6 — Open the result in XyGrib**
+
+![Showing the area](screenshots/XyGrib-Windows-ScreenShots/win-06-xygrib-show-area.jpg)
+
+![Files, rows and options](screenshots/XyGrib-Windows-ScreenShots/win-07-xygrib-show-files-rows-options.jpg)
+
+![GRIB file information](screenshots/XyGrib-Windows-ScreenShots/win-08-xygrib-show-grib-file-information.jpg)
+
+![Swell layer](screenshots/XyGrib-Windows-ScreenShots/win-09-xygrib-show-swell.jpg)
+
+![Wind waves](screenshots/XyGrib-Windows-ScreenShots/win-10-xygrib-show-wind-wave.jpg)
+
+![Primary waves](screenshots/XyGrib-Windows-ScreenShots/win-11-xygrib-show-primary-wave.jpg)
+
+![Water temperature](screenshots/XyGrib-Windows-ScreenShots/win-12-xygrib-show-water-temperature.jpg)
+
+![Significant wave height](screenshots/XyGrib-Windows-ScreenShots/win-13-xygrib-show-significant-wave-height.jpg)
+
+---
+
 ## ⚙️ Advanced configuration
 
 You can edit the script to adjust these parameters:
@@ -529,6 +639,8 @@ To verify that everything is working, you can check the log file:
 ```bash
 tail -f /home/your_user/xygrib-forecast.log
 ```
+
+"On Windows, see [Usage on Windows](#-usage-on-windows)"
 
 ---
 
