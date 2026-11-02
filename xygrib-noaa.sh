@@ -9,7 +9,7 @@
 #/_______  /__|     \______  (____  /____(____  /__|_|  /___  /__|    \___  >
 #        \/                \/     \/          \/      \/    \/            \/ 
 # --------------------------------------------------------------------------------------------------------------------------------------
-# GFS NOAA NOMADS - v1.0.7 — 2026-10-26
+# GFS NOAA NOMADS - v1.0.8 — 2026-11-02
 # --------------------------------------------------------------------------------------------------------------------------------------
 # Descarga un pronóstico GFS de 0.25° directamente desde NOAA NOMADS
 # y construye un archivo GRIB2 compatible con XyGrib.
@@ -65,6 +65,17 @@
 #          OPT E6: Detección WW3 con fast path: prueba primero el mismo ciclo/fecha
 #          que GFS antes de lanzar la detección completa con reintentos en días
 #          anteriores. Fallback completo intacto para los casos donde no coinciden.
+#
+# v1.0.7 — FIX: La línea de región ahora muestra valores absolutos con letras que indican
+#          el hemisferio, por lo que la salida se lee correctamente en cualquier parte 
+#          del mundo. Por ejemplo, 90°W a 50°W / 60°S a 38°S en lugar de números con
+#          signo. Las variables de región y las descargas permanecen sin cambios.
+#          Versión: encabezado, banner y pie de página actualizados a la versión 1.0.7.
+#
+# v1.0.8 — FIX: espera mínima de 10 s entre TODAS las peticiones a NOMADS (pedido por la
+#          página oficial del filtro GRIB). Antes, las sondas de detección de ciclo
+#          (GFS y WW3) no tenían pausa y --retry-delay era de 5 s. Se centraliza en
+#          nomads_curl/nomads_wait con marca de tiempo en archivo (compatible con subshells).
 # ============================================================
 
 set -u
@@ -174,13 +185,40 @@ XYGRIB_DIR="${HOME}/.xygrib/grib"
 # NOTA: Los nombres de los archivos finales (OUTPUT, WAVE_OUTPUT, COMBINED_OUTPUT)
 # se definen dinámicamente más abajo una vez detectados USED_DATE y BEST_CYCLE.
 
-# Pausa entre solicitudes (segundos) para no sobrecargar el servidor NOAA
-# NOAA recomienda espaciar las solicitudes automatizadas
-PAUSE=8
+# Pausa mínima entre peticiones a NOMADS (segundos).
+# La página oficial del filtro GRIB de NOMADS pide 10 s entre peticiones en scripts con bucles.
+# Se aplica a TODAS las peticiones (sondas de ciclo, descargas y reintentos), no solo a las descargas.
+PAUSE=10
+
+# Marca de tiempo de la última petición (archivo, porque las funciones de detección corren en subshell)
+LAST_REQ_FILE="${WORKDIR}/.last_request"
 
 # ------------------------------------------------------------
 # FUNCIONES
 # ------------------------------------------------------------
+
+# Espera lo necesario para que pasen PAUSE segundos desde el fin de la última petición.
+nomads_wait() {
+    local now last remaining
+    now=$(date +%s)
+    last=$(cat "$LAST_REQ_FILE" 2>/dev/null)
+    last=${last:-0}
+    remaining=$(( PAUSE - (now - last) ))
+    if [ "$remaining" -gt 0 ]; then
+        sleep "$remaining"
+    fi
+}
+
+# Envoltorio de curl para NOMADS: espera, ejecuta y registra la hora de finalización.
+# Conserva el código de salida y la salida estándar de curl (necesario para --write-out).
+nomads_curl() {
+    local rc
+    nomads_wait
+    curl "$@"
+    rc=$?
+    date +%s > "$LAST_REQ_FILE"
+    return $rc
+}
 
 # Función: test_gfs_file
 # Descripción: Verifica si un archivo GFS específico está disponible en NOAA.
@@ -196,7 +234,7 @@ test_gfs_file() {
     local test_url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?file=gfs.t${cycle}z.pgrb2.0p25.f${forecast}&dir=%2Fgfs.${d}%2F${cycle}%2Fatmos&subregion=&leftlon=${WEST}&rightlon=${EAST}&toplat=${NORTH}&bottomlat=${SOUTH}"
     # GET liviano (rango de 1 byte) en vez de HEAD: el CGI de NOMADS no siempre
     # responde bien a HEAD (falsos positivos/negativos conocidos en estos scripts).
-    curl --output /dev/null --silent --fail --connect-timeout 15 --max-time 30 --range 0-0 "$test_url"
+    nomads_curl --output /dev/null --silent --fail --connect-timeout 15 --max-time 30 --range 0-0 "$test_url"
 }
 
 # Función: find_best_cycle
@@ -266,7 +304,7 @@ download_gfs_data() {
     
     local url="${url_base//\{cycle\}/$cycle}"
     url="${url//\{date\}/$d}"
-    if curl --fail --location --connect-timeout 30 --max-time 600 --retry 3 --retry-delay 5 --output "$output_file" "$url" 2>/dev/null; then
+    if nomads_curl --fail --location --connect-timeout 30 --max-time 600 --retry 3 --retry-delay 10 --output "$output_file" "$url" 2>/dev/null; then
         return 0
     else
         rm -f "$output_file"
@@ -284,7 +322,7 @@ test_wave_file() {
     local d=$2
     local test_url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfswave.pl?dir=%2Fgfs.${d}%2F${cycle}%2Fwave%2Fgridded&file=gfswave.t${cycle}z.global.0p25.f000.grib2&all_var=on&all_lev=on&subregion=&toplat=${NORTH}&leftlon=${WEST}&rightlon=${EAST}&bottomlat=${SOUTH}"
     # GET liviano en vez de HEAD (mismo motivo que en test_gfs_file)
-    curl --output /dev/null --silent --fail --connect-timeout 15 --max-time 30 --range 0-0 "$test_url"
+    nomads_curl --output /dev/null --silent --fail --connect-timeout 15 --max-time 30 --range 0-0 "$test_url"
 }
 
 # Función: find_best_wave_cycle
@@ -347,7 +385,7 @@ download_wave_data() {
     local url="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfswave.pl?dir=%2Fgfs.${d}%2F${cycle}%2Fwave%2Fgridded&file=${file}&all_var=on&all_lev=on&subregion=&toplat=${NORTH}&leftlon=${WEST}&rightlon=${EAST}&bottomlat=${SOUTH}"
     
     local http_code
-    http_code=$(curl --silent --location --connect-timeout 30 --max-time 600 --retry 3 --retry-delay 5 --output "$output_file" --write-out "%{http_code}" "$url" 2>/dev/null)
+    http_code=$(nomads_curl --silent --location --connect-timeout 30 --max-time 600 --retry 3 --retry-delay 10 --output "$output_file" --write-out "%{http_code}" "$url" 2>/dev/null)
     local curl_status=$?
 
     if [ $curl_status -eq 0 ] && { [ "$http_code" = "200" ] || [ "$http_code" = "206" ]; }; then
@@ -375,7 +413,7 @@ fi
 # Mostrar cabecera informativa
 echo
 echo "============================================================"
-echo " GFS NOAA NOMADS - v1.0.7"
+echo " GFS NOAA NOMADS - v1.0.8"
 echo " ${MAX_FORECAST}-hour forecast for XyGrib"
 if [ "$DOWNLOAD_WAVES" = true ]; then
     echo " + Wave data (WW3) with intelligent file detection"
@@ -463,11 +501,6 @@ for HOUR in "${HOURS[@]}"; do
     else
         echo "❌ FAILED"
         ((FAILED++))
-    fi
-    
-    # Pausa entre solicitudes (excepto después del último archivo)
-    if [ "$TOTAL" -lt "$EXPECTED_FILES" ]; then
-        sleep "$PAUSE"
     fi
 done
 
@@ -616,11 +649,6 @@ if [ "$DOWNLOAD_WAVES" = true ]; then
                 ((WAVE_FAILED++))
                 break
             fi
-            
-            # Pausa entre solicitudes (excepto después del último archivo)
-            if [ "$WAVE_TOTAL" -lt "${#HOURS[@]}" ]; then
-                sleep "$PAUSE"
-            fi
         done
 
         # ------------------------------------------------------------
@@ -711,7 +739,7 @@ echo "✅ Temporary files removed."
 
 echo
 echo "============================================================"
-echo " v1.0.7 COMPLETED"
+echo " v1.0.8 COMPLETED"
 echo "============================================================"
 echo
 echo "GFS file:"

@@ -5,7 +5,7 @@
 
 > **Direct download from NOAA/NOMADS of a GRIB2 forecast, ready for XyGrib.**  
 > Eliminates dependency on the OpenGribs intermediary server.  
-> **Now with optional wave data (WW3), a combined GFS+WW3 file, atomic single-cycle downloads, and hardened HTTP/error handling.** 🌊
+> **Now with optional wave data (WW3), a combined GFS+WW3 file, atomic single-cycle downloads, hardened HTTP/error handling, and NOMADS-compliant request pacing.** 🌊
 
 ---
 
@@ -45,6 +45,7 @@ This script **downloads directly from the official source (NOAA NOMADS)** and bu
 | **🌊 Combined file** | **New in v1.0.4** — GFS + WW3 concatenated into one GRIB2, so wind and waves appear in the same XyGrib session |
 | **🔒 Cycle integrity** | **New in v1.0.5** — downloads are bound to one cycle; GFS+WW3 combined only if both match |
 | **🛡️ Hardened requests** | **New in v1.0.6** — HTTP timeouts on cycle-detection probes; `cat` for the combined file verified with explicit failure handling; WW3 cycle fast-path reuses the GFS cycle when possible |
+| **⏱️ NOMADS pacing** | **New in v1.0.8** — a minimum 10 s wait between *all* requests to NOMADS (cycle probes, downloads and curl retries), as requested by the official GRIB filter page |
 
 ---
 
@@ -87,7 +88,7 @@ chmod +x xygrib-noaa.sh
 1. Downloads **filtered GRIB files** from NOAA NOMADS (number depends on `MAX_FORECAST`).
    - Default: 25 files for 72h (3 days) at 3-hour intervals.
 2. **Validates the full horizon before starting**: a cycle is only accepted if both `f000` and `f${MAX_FORECAST}` exist on NOMADS. A partially published cycle is skipped entirely.
-3. Waits **8 seconds** between requests (respecting NOAA's recommendation).
+3. Waits **10 seconds** between all requests to NOMADS, including cycle-detection probes and retries (NOAA's GRIB filter page asks for at least 10 s between fetches in scripts with loops).
 4. Concatenates the files into a **single GRIB2**.
 5. Saves it to `~/.xygrib/grib/GFS_NOAA_YYYYMMDD_CYCLEz_XXhs.grib2`.
 6. Optionally, downloads wave data (WW3) from NOAA NOMADS, saving it as `WW3_NOAA_YYYYMMDD_CYCLEz_XXhs.grib2`.
@@ -98,7 +99,7 @@ chmod +x xygrib-noaa.sh
 
 ```text
 ============================================================
- GFS NOAA NOMADS - v1.0.7
+ GFS NOAA NOMADS - v1.0.8
  72-hour forecast for XyGrib
  + Wave data (WW3) with intelligent file detection
  + Combined GFS+WW3 file for a single XyGrib session
@@ -219,7 +220,7 @@ Building final Wave GRIB2...
 ✅ Temporary files removed.
 
 ============================================================
- v1.0.7 COMPLETED
+ v1.0.8 COMPLETED
 ============================================================
 
 GFS file:
@@ -305,7 +306,7 @@ To confirm you are running the right build, open **Help → About** in XyGrib. T
    ./xygrib-noaa.sh
    ```
 
-   The files are saved to `C:\Users\<your_user>\.xygrib\grib`. The folder name starts with a dot, so enable **Hidden items** in File Explorer. The run takes about 8 to 10 minutes because the script waits 8 seconds between requests. A `this libcurl is Debug-enabled` warning from curl can be ignored.
+   The files are saved to `C:\Users\<your_user>\.xygrib\grib`. The folder name starts with a dot, so enable **Hidden items** in File Explorer. The run takes about 10 to 15 minutes because the script waits 10 seconds between requests. A `this libcurl is Debug-enabled` warning from curl can be ignored.
 
 6. **Open the result in XyGrib:** **File → Open GRIB** and select `GFS_WW3_NOAA_*.grib2` (the combined file with wind and waves). Swell layers must be enabled from the menu.
 
@@ -357,7 +358,7 @@ You can edit the script to adjust these parameters:
 |---|---|---|
 | `MAX_FORECAST` | Forecast horizon in hours (0-384) | `72` |
 | `MAX_DAYS_BACK` | Days to look back if current date has no cycles | `3` |
-| `PAUSE` | Pause between downloads (seconds) | `8` |
+| `PAUSE` | Minimum wait between requests to NOMADS (seconds). NOAA asks for at least 10 s; do not lower it | `10` |
 | `WEST`, `EAST`, `NORTH`, `SOUTH` | Geographic region | `-90`, `-50`, `-38`, `-60` |
 
 ---
@@ -566,7 +567,7 @@ The script was tested on **XyGrib 1.2.6 / antiX Linux 26** with the following ve
 
 ## ⚠️ Important notes
 
-1. **Pause between requests:** NOAA recommends spacing requests to avoid overloading NOMADS. The script waits 8 seconds between each download.
+1. **Pause between requests:** NOAA's GRIB filter page asks for a 10-second wait between fetches in scripts with loops. The script enforces a minimum of 10 seconds between every request to NOMADS (probes, downloads and retries). Lowering `PAUSE` below 10 risks being blocked by NOMADS.
 2. **Download failures:** If any individual file fails, the script stops and shows which `fXXX` failed.
 3. **Temporary files:** They are kept in `/tmp/gfs-...` and `/tmp/wave-...` for debugging if needed.
 4. **CDO compatibility:** If you run `cdo showname` and get `Unsupported file structure`, **don't worry** — XyGrib can still open the file. This happens with some GRIB structures that CDO can't interpret but XyGrib handles fine.
@@ -839,6 +840,17 @@ The screenshot shows significant wave height forecasts for a point in the South 
 ---
 
 ## 📋 Changelog
+
+### v1.0.8 — 2026-11-02
+**NOMADS-compliant request pacing**
+
+- **Fixed:** the official NOMADS GRIB filter page asks for a 10-second wait between fetches in scripts with loops. Before, only the download loops paused (8 s); the cycle-detection probes (`test_gfs_file`, `test_wave_file`) fired with no pause, and curl retries waited 5 s.
+- **Changed:** `PAUSE` is now `10`, and a single limiter (`nomads_curl` / `nomads_wait`) applies it to **every** request to NOMADS: probes, downloads and retries (`--retry-delay 10`).
+- **Internals:** the timestamp of the last request is kept in a file inside the temporary directory, because the detection functions run in subshells (`$(...)`), where a global variable would not propagate. The limiter is per run: it does not coordinate separate executions of the script.
+- **Removed:** the two `sleep "$PAUSE"` calls in the download loops, now redundant.
+- **Note:** total run time increases (about 53 requests for a 72 h horizon, so at least ~9 minutes of waiting). The region, variables and output files are unchanged.
+
+---
 
 ### v1.0.7 — 2026-10-26
 **Region output with hemisphere letters**
