@@ -34,7 +34,7 @@ This script **downloads directly from the official source (NOAA NOMADS)** and bu
 | **Horizon** | 0 – 384 hours (configurable, default 72h / 3 days) |
 | **Interval** | 3 hours (0-240h) / 12 hours (240-384h) |
 | **Region** | `90°W` to `50°W` / `60°S` to `38°S`<br>(South America and surrounding waters) *configurable* |
-| **Variables** | Temperature, wind, gusts, pressure, humidity, cloud cover, precipitation, snow, CAPE, **0°C isotherm**, freezing rain, etc. |
+| **Variables** | Temperature, wind, gusts, **mean sea level pressure (MSLP)**, humidity, cloud cover, precipitation, snow, CAPE, **0°C isotherm**, freezing rain, etc. |
 | **Output** | Single GRIB2 in `~/.xygrib/grib/GFS_NOAA_YYYYMMDD_CYCLEz_XXhs.grib2` |
 | **Temporaries** | Stored in `/tmp/gfs-...` and **automatically cleaned up** after execution |
 | **Validation** | Automatic GRIB format check using `file` command |
@@ -46,6 +46,7 @@ This script **downloads directly from the official source (NOAA NOMADS)** and bu
 | **🔒 Cycle integrity** | **New in v1.0.5** — downloads are bound to one cycle; GFS+WW3 combined only if both match |
 | **🛡️ Hardened requests** | **New in v1.0.6** — HTTP timeouts on cycle-detection probes; `cat` for the combined file verified with explicit failure handling; WW3 cycle fast-path reuses the GFS cycle when possible |
 | **⏱️ NOMADS pacing** | **New in v1.0.8** — a minimum 10 s wait between *all* requests to NOMADS (cycle probes, downloads and curl retries), as requested by the official GRIB filter page |
+| **🌡️ Pressure MSL** | **New in v1.0.9** — mean sea level pressure (`PRMSL`) added to the GFS request, so XyGrib's "Presión (MSL)" field is no longer empty |
 
 ---
 
@@ -87,6 +88,7 @@ chmod +x xygrib-noaa.sh
 
 1. Downloads **filtered GRIB files** from NOAA NOMADS (number depends on `MAX_FORECAST`).
    - Default: 25 files for 72h (3 days) at 3-hour intervals.
+   - Variables include **mean sea level pressure (PRMSL)**, temperature, wind, gusts, humidity, cloud cover, precipitation, snow, CAPE, 0°C isotherm, and more.
 2. **Validates the full horizon before starting**: a cycle is only accepted if both `f000` and `f${MAX_FORECAST}` exist on NOMADS. A partially published cycle is skipped entirely.
 3. Waits **10 seconds** between all requests to NOMADS, including cycle-detection probes and retries (NOAA's GRIB filter page asks for at least 10 s between fetches in scripts with loops).
 4. Concatenates the files into a **single GRIB2**.
@@ -99,7 +101,7 @@ chmod +x xygrib-noaa.sh
 
 ```text
 ============================================================
- GFS NOAA NOMADS - v1.0.8
+ GFS NOAA NOMADS - v1.0.9
  72-hour forecast for XyGrib
  + Wave data (WW3) with intelligent file detection
  + Combined GFS+WW3 file for a single XyGrib session
@@ -220,7 +222,7 @@ Building final Wave GRIB2...
 ✅ Temporary files removed.
 
 ============================================================
- v1.0.8 COMPLETED
+ v1.0.9 COMPLETED
 ============================================================
 
 GFS file:
@@ -513,7 +515,7 @@ You can get coordinates from:
 
 ## 🧪 Validation
 
-The script was tested on **XyGrib 1.2.6 / antiX Linux 26** with the following verified parameters:
+The script was tested on **XyGrib 1.3.1 / antiX Linux 26** with the following verified parameters:
 
 | XyGrib Parameter | Value in Río Gallegos |
 |---|---|
@@ -531,6 +533,7 @@ The script was tested on **XyGrib 1.2.6 / antiX Linux 26** with the following ve
 | **0°C isotherm** | **1147 m** ✅ |
 | **Significant wave height** | ✅ Available (WW3) |
 | **Swell (height, period, direction)** | ✅ Available with patched XyGrib (see Wave data section) |
+| **Mean sea level pressure (MSLP)** | **1007.7 hPa** ✅ |
 
 ---
 
@@ -841,6 +844,14 @@ The screenshot shows significant wave height forecasts for a point in the South 
 
 ## 📋 Changelog
 
+### v1.0.9 — 2026-11-03
+**Mean sea level pressure (MSLP) added to GFS downloads**
+
+- **Fixed:** the GFS URL did not request `PRMSL` (Pressure Reduced to Mean Sea Level). As a result, XyGrib's "Presión (MSL)" field was empty, even though XyGrib already maps `paramcat=3, paramnumber=1` to `GRB_PRESSURE_MSL`.
+- **Changed:** `var_PRMSL=on&lev_mean_sea_level=on` added to `url_base`. The existing `var_PRES=on&lev_0C_isotherm=on` is kept (pressure at the 0°C isotherm, a different variable).
+- **Verified:** `grib_ls` shows `prmsl sfc 0` in the downloaded GRIB, and XyGrib displays it as "Presión (MSL)" with a coherent value (1007.7 hPa at 44.88°S 083.13°W).
+- **Note:** NOMADS returns `PRMSL` with `typeOfFirstFixedSurface=sfc` (1), not `101` (mean sea level). XyGrib still maps it correctly because `analyseProductType()` uses `paramnumber==1`, independent of the level.
+
 ### v1.0.8 — 2026-11-02
 **NOMADS-compliant request pacing**
 
@@ -988,7 +999,7 @@ Two practical consequences: a run at 00:30 UTC no longer labels yesterday's 18Z 
 
 ## 🧠 Credits
 
-Developed from tests conducted with **XyGrib 1.2.6** on **antiX Linux 26**.
+Developed from tests conducted with **XyGrib 1.3.1** on **antiX Linux 26**.
 
 Thanks to the XyGrib community and NOAA/NCEP for keeping the data open.
 

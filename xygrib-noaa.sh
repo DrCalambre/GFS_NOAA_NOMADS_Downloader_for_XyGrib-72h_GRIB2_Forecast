@@ -9,7 +9,7 @@
 #/_______  /__|     \______  (____  /____(____  /__|_|  /___  /__|    \___  >
 #        \/                \/     \/          \/      \/    \/            \/ 
 # --------------------------------------------------------------------------------------------------------------------------------------
-# GFS NOAA NOMADS - v1.0.8 — 2026-11-02
+# GFS NOAA NOMADS - v1.0.9 — 2026-11-03
 # --------------------------------------------------------------------------------------------------------------------------------------
 # Descarga un pronóstico GFS de 0.25° directamente desde NOAA NOMADS
 # y construye un archivo GRIB2 compatible con XyGrib.
@@ -76,6 +76,11 @@
 #          página oficial del filtro GRIB). Antes, las sondas de detección de ciclo
 #          (GFS y WW3) no tenían pausa y --retry-delay era de 5 s. Se centraliza en
 #          nomads_curl/nomads_wait con marca de tiempo en archivo (compatible con subshells).
+#
+# v1.0.9 — FIX: se agregó la presión reducida al nivel del mar (PRMSL) a la lista
+#          de variables descargadas. Antes, XyGrib mostraba "Presión (MSL)" vacía
+#          porque el script pedía var_PRES en la isoterma de 0°C pero no var_PRMSL.
+#          Reportado por Georges-50 en el issue #326.
 # ============================================================
 
 set -u
@@ -300,7 +305,7 @@ download_gfs_data() {
     local output_file=$4
     
     # Base de la URL con placeholders {cycle} y {date} que se reemplazarán dinámicamente
-    local url_base="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?file=gfs.t{cycle}z.pgrb2.0p25.f${forecast}&dir=%2Fgfs.{date}%2F{cycle}%2Fatmos&var_TMP=on&lev_2_m_above_ground=on&var_DPT=on&lev_2_m_above_ground=on&var_RH=on&lev_2_m_above_ground=on&var_TCDC=on&lev_entire_atmosphere=on&var_PRATE=on&lev_surface=on&var_CSNOW=on&lev_surface=on&var_UGRD=on&lev_10_m_above_ground=on&var_VGRD=on&lev_10_m_above_ground=on&var_GUST=on&lev_surface=on&var_CAPE=on&lev_surface=on&var_CFRZR=on&lev_surface=on&var_SNOD=on&lev_surface=on&var_WEASD=on&lev_surface=on&var_HGT=on&lev_925_mb=on&lev_850_mb=on&lev_700_mb=on&lev_600_mb=on&lev_500_mb=on&lev_400_mb=on&lev_300_mb=on&lev_250_mb=on&lev_200_mb=on&var_TMP=on&lev_925_mb=on&lev_850_mb=on&lev_700_mb=on&lev_600_mb=on&lev_500_mb=on&lev_400_mb=on&lev_300_mb=on&lev_250_mb=on&lev_200_mb=on&var_HGT=on&lev_0C_isotherm=on&var_RH=on&lev_0C_isotherm=on&var_PRES=on&lev_0C_isotherm=on&subregion=&leftlon=${WEST}&rightlon=${EAST}&toplat=${NORTH}&bottomlat=${SOUTH}"
+    local url_base="https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl?file=gfs.t{cycle}z.pgrb2.0p25.f${forecast}&dir=%2Fgfs.{date}%2F{cycle}%2Fatmos&var_TMP=on&lev_2_m_above_ground=on&var_DPT=on&lev_2_m_above_ground=on&var_RH=on&lev_2_m_above_ground=on&var_TCDC=on&lev_entire_atmosphere=on&var_PRATE=on&lev_surface=on&var_CSNOW=on&lev_surface=on&var_UGRD=on&lev_10_m_above_ground=on&var_VGRD=on&lev_10_m_above_ground=on&var_GUST=on&lev_surface=on&var_CAPE=on&lev_surface=on&var_CFRZR=on&lev_surface=on&var_SNOD=on&lev_surface=on&var_WEASD=on&lev_surface=on&var_PRMSL=on&lev_mean_sea_level=on&var_HGT=on&lev_925_mb=on&lev_850_mb=on&lev_700_mb=on&lev_600_mb=on&lev_500_mb=on&lev_400_mb=on&lev_300_mb=on&lev_250_mb=on&lev_200_mb=on&var_TMP=on&lev_925_mb=on&lev_850_mb=on&lev_700_mb=on&lev_600_mb=on&lev_500_mb=on&lev_400_mb=on&lev_300_mb=on&lev_250_mb=on&lev_200_mb=on&var_HGT=on&lev_0C_isotherm=on&var_RH=on&lev_0C_isotherm=on&var_PRES=on&lev_0C_isotherm=on&subregion=&leftlon=${WEST}&rightlon=${EAST}&toplat=${NORTH}&bottomlat=${SOUTH}"
     
     local url="${url_base//\{cycle\}/$cycle}"
     url="${url//\{date\}/$d}"
@@ -413,7 +418,7 @@ fi
 # Mostrar cabecera informativa
 echo
 echo "============================================================"
-echo " GFS NOAA NOMADS - v1.0.8"
+echo " GFS NOAA NOMADS - v1.0.9"
 echo " ${MAX_FORECAST}-hour forecast for XyGrib"
 if [ "$DOWNLOAD_WAVES" = true ]; then
     echo " + Wave data (WW3) with intelligent file detection"
@@ -739,7 +744,7 @@ echo "✅ Temporary files removed."
 
 echo
 echo "============================================================"
-echo " v1.0.8 COMPLETED"
+echo " v1.0.9 COMPLETED"
 echo "============================================================"
 echo
 echo "GFS file:"
