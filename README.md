@@ -859,7 +859,7 @@ The screenshot shows significant wave height forecasts for a point in the South 
 - **Changed:** `PAUSE` is now `10`, and a single limiter (`nomads_curl` / `nomads_wait`) applies it to **every** request to NOMADS: probes, downloads and retries (`--retry-delay 10`).
 - **Internals:** the timestamp of the last request is kept in a file inside the temporary directory, because the detection functions run in subshells (`$(...)`), where a global variable would not propagate. The limiter is per run: it does not coordinate separate executions of the script.
 - **Removed:** the two `sleep "$PAUSE"` calls in the download loops, now redundant.
-- **Note:** total run time increases (about 53 requests for a 72 h horizon, so at least ~9 minutes of waiting). The region, variables and output files are unchanged.
+- **Note:** total run time increases (about 55 requests for a 72 h horizon, at least 9 minutes of pure waiting; about 11 to 12 minutes measured on Linux). The region, variables and output files are unchanged.
 
 ---
 
