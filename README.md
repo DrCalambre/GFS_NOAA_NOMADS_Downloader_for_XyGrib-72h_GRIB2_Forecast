@@ -412,37 +412,25 @@ This file is built by appending the WW3 GRIB2 after the GFS GRIB2. Since GRIB2 i
 
 **Recommended for XyGrib**: open the combined file instead of the two separate ones.
 
-### Requirement: swell data needs a patched XyGrib
+### Requirement: XyGrib with swell support
 
-The NOAA WW3 swell partitions (`shts`, `mpts`, `swdir`) are encoded with `surfaceType1=241` ("Ordered Sequence of Data"), which **the current XyGrib codebase does not recognize**. Without a fix, XyGrib loads the combined file but **swell height, period and direction will not display** — only wind waves and primary waves will.
+The NOAA WW3 swell partitions (`shts`, `mpts`, `swdir`) are encoded with `surfaceType1=241` ("Ordered Sequence of Data"). XyGrib builds that predate the fix load the combined file but **do not display swell height, period and direction**: only wind waves and primary waves show up.
 
-The fix is not merged upstream yet. It is available in a fork:
-
-**https://github.com/DrCalambre/XyGrib** — branch `fix-swell-241`
-
-To build it:
+The fix is merged in [frfa/XyGrib](https://github.com/frfa/XyGrib) `main` (`Grib2Record.cpp`, `readAltitude()`), together with the native NOMADS GFS/GFS-Wave provider. Building `main` is enough; no fork or special branch is needed:
 
 ```bash
-git clone https://github.com/DrCalambre/XyGrib
+git clone https://github.com/frfa/XyGrib
 cd XyGrib
-git checkout fix-swell-241
-mkdir build && cd build && cmake .. && make -j$(nproc)
-```
-
-Once the build finishes, the binary is at `build/src/XyGrib`. Run it from the terminal:
-
-```bash
+mkdir build && cd build
+cmake .. && make -j$(nproc)
 ./src/XyGrib
 ```
 
-The `fix-swell-241` branch includes two commits:
-
-- `fix: add missing aecunpack.c and update g2clib CMakeLists` — a build fix required to compile the fork from a clean clone.
-- `fix: accept NOAA WW3 swell partitions (surfaceType1=241)` — the swell fix itself.
+Build dependencies for Debian / Ubuntu / antiX are listed in the [build steps of the DrCalambre fork](https://github.com/DrCalambre/XyGrib#build-and-test-linux).
 
 Then open the combined `GFS_WW3_NOAA_*.grib2` file in XyGrib and enable the swell layers from the menu (they are not displayed automatically).
 
-For the full technical discussion — the `grib_ls` evidence, why the fix is scoped to `discipline==10`, and the side-by-side verification against GFS — see [issue #326](https://github.com/opengribs/XyGrib/issues/326#issuecomment-5920495499).
+For the technical discussion (the `grib_ls` evidence, why the fix is scoped to `discipline==10`, and the side-by-side verification against GFS) see [issue #326](https://github.com/opengribs/XyGrib/issues/326#issuecomment-5920495499).
 
 ---
 
@@ -532,7 +520,7 @@ The script was tested on **XyGrib 1.3.1 / antiX Linux 26** with the following ve
 | Snow depth | 0.0 cm |
 | **0°C isotherm** | **1147 m** ✅ |
 | **Significant wave height** | ✅ Available (WW3) |
-| **Swell (height, period, direction)** | ✅ Available with patched XyGrib (see Wave data section) |
+| **Swell (height, period, direction)** | ✅ Available with XyGrib built from `frfa/main` (see Wave data section) |
 | **Mean sea level pressure (MSLP)** | **1007.7 hPa** ✅ |
 
 ---
@@ -575,7 +563,7 @@ The script was tested on **XyGrib 1.3.1 / antiX Linux 26** with the following ve
 3. **Temporary files:** They are kept in `/tmp/gfs-...` and `/tmp/wave-...` for debugging if needed.
 4. **CDO compatibility:** If you run `cdo showname` and get `Unsupported file structure`, **don't worry** — XyGrib can still open the file. This happens with some GRIB structures that CDO can't interpret but XyGrib handles fine.
 5. **Wave data:** WW3 data is optional and can be enabled/disabled with `DOWNLOAD_WAVES`. It uses `all_var=on` and `all_lev=on` for reliability, which means the file includes all available wave variables.
-6. **Swell data (v1.0.4):** The combined file includes swell records, but seeing them in XyGrib requires the patch described in the Wave data section. Wind waves and primary waves work with stock XyGrib.
+6. **Swell data (v1.0.4):** The combined file includes swell records, but seeing them in XyGrib requires a build that includes the swell fix (`frfa/main`, see the Wave data section). Wind waves and primary waves work with older XyGrib builds.
 
 ---
 
@@ -675,8 +663,8 @@ tail -f /home/your_user/xygrib-forecast.log
 
 ### Swell data doesn't show up in the combined file
 
-- XyGrib must be patched to recognize `surfaceType1=241` used by NOAA for swell partitions. See the [requirement section](#requirement-swell-data-needs-a-patched-xygrib) above.
-- Without the patch, wind waves and primary waves still display correctly — only swell is affected.
+- XyGrib must recognize `surfaceType1=241` used by NOAA for swell partitions. Build `frfa/main`: see the [requirement section](#requirement-xygrib-with-swell-support) above.
+- With an older XyGrib build, wind waves and primary waves still display correctly — only swell is affected.
 - The GFS file opens fine on its own; the issue is specific to swell records inside the combined file.
 
 ---
@@ -736,13 +724,13 @@ A more comprehensive downloader that covers:
 
 **Trade-off:** requires a heavier stack (Python, xarray, cdo, wgrib2, eccodes), but it covers what this script doesn't.
 
-### 🛰️ frfa's XyGrib fork — rebuilding XyGrib itself
+### 🛰️ frfa's XyGrib — native download inside XyGrib
 
 **[https://github.com/frfa/XyGrib](https://github.com/frfa/XyGrib)**
 
-A more ambitious effort: a fork of **XyGrib itself** (the viewer, not a downloader script), aiming to let XyGrib download directly from GRIB service providers instead of relying on an intermediary server like OpenGribs. This is a much deeper undertaking than any downloader script — it touches XyGrib's own codebase.
+XyGrib itself (the viewer) can now download GFS and GFS-Wave directly from NOAA NOMADS, with the 10 s request pacing, a countdown in the download dialog and swell support. All of it is merged in `main` (pull requests #4 to #8 and #10). It has to be built from source (see the [requirement section](#requirement-xygrib-with-swell-support)).
 
-**Note:** this script's combined GFS+WW3 file depends on a fix that is **not yet merged into frfa's fork**. The fix lives in `DrCalambre/XyGrib`, branch `fix-swell-241` — see the [requirement section](#requirement-swell-data-needs-a-patched-xygrib) above. Once merged upstream, no fork will be needed.
+This script remains useful for scheduled, unattended downloads (see the anacron section), independent of the GUI.
 
 ### 🔧 GFS-NOAA-NOMADS-Downloader — POSIX/CLI fork by @frfa
 
@@ -766,7 +754,7 @@ A fork of *this* script, rewritten for a more UNIX-like experience:
 | **Wind + waves, no dependencies, edit-and-run** | ✅ **This script** (`xygrib-noaa.sh`) |
 | **Currents + HYCOM + RTOFS + ICON + ECMWF** | ✅ [marine-grib-downloader](https://github.com/Mike101202/marine-grib-downloader) |
 | **Same wind+waves, but CLI flags / POSIX / config files** | ✅ [frfa's fork](https://github.com/frfa/GFS-NOAA-NOMADS-Downloader) |
-| **Want XyGrib itself to download natively, no external script** | 👀 [frfa's XyGrib fork](https://github.com/frfa/XyGrib) *(work in progress)* |
+| **Want XyGrib itself to download natively, no external script** | ✅ [frfa's XyGrib](https://github.com/frfa/XyGrib) `main` (build from source) |
 
 All these projects share the same goal: **keeping XyGrib useful while the official OpenGribs server is down.** Choose based on what you actually need.
 
@@ -926,7 +914,7 @@ Two practical consequences: a run at 00:30 UTC no longer labels yesterday's 18Z 
 - Header comment for the combined file documents the verified behavior of `GribReader::storeRecordInMap` (records are always appended, no replacement)
 - Final summary check points to `$COMBINED_OUTPUT` instead of `$WAVE_OUTPUT`
 
-**Requirement:** to see swell data from WW3, XyGrib needs a fix for the `surfaceType1=241` encoding. See the [requirement section](#requirement-swell-data-needs-a-patched-xygrib) below.
+**Requirement:** to see swell data from WW3, XyGrib needs a fix for the `surfaceType1=241` encoding. See the [requirement section](#requirement-xygrib-with-swell-support) below.
 
 ---
 
@@ -993,7 +981,7 @@ Two practical consequences: a run at 00:30 UTC no longer labels yesterday's 18Z 
 - [OpenGribs issue #326 — GRIB server down](https://github.com/opengribs/XyGrib/issues/326)
 - [GFS 0.25° documentation](https://www.nco.ncep.noaa.gov/pmb/products/gfs/)
 - [WaveWatch III (WW3) documentation](https://polar.ncep.noaa.gov/waves/index2.shtml)
-- [XyGrib fork with the swell fix (`surfaceType1=241`)](https://github.com/DrCalambre/XyGrib/tree/fix-swell-241)
+- [XyGrib (frfa): native NOMADS provider and swell fix](https://github.com/frfa/XyGrib)
 
 ---
 
